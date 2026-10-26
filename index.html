@@ -1,0 +1,237 @@
+<!doctype html>
+<!--
+  ============================================================
+  上线前把下面这些占位文字全部换掉(在编辑器里搜索即可):
+    · 你的名字
+    · 一句话介绍里的「前端 / 全栈开发者」
+    · N          ← 左上角 logo 字母,换成你名字首字母
+    · you@example.com ← 你的邮箱(共 4 处)
+    · 用户名和域名已经填好(Xlattice0 / www.xlattice.top),这两项不用再动
+    · 三个项目卡片、三条笔记
+  ============================================================
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>你的名字 · 个人主页</title>
+  <meta name="description" content="你的名字的个人主页 —— 前端 / 全栈开发者,做一些顺手又有用的东西。" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="你的名字 · 个人主页" />
+  <meta property="og:description" content="前端 / 全栈开发者,做一些顺手又有用的东西。" />
+  <meta property="og:url" content="https://www.xlattice.top/" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="canonical" href="https://www.xlattice.top/" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="assets/style.css" />
+
+  <script>
+    /* 在首屏渲染前定主题,避免闪一下白底 */
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('theme'); } catch (e) {}
+      var dark = saved
+        ? saved === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    })();
+  </script>
+</head>
+
+<body id="top">
+  <a class="skip" href="#main">跳到正文</a>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">N</span>
+        <span class="brand-text">你的名字</span>
+      </a>
+
+      <nav class="nav-links" aria-label="主导航">
+        <a href="#about">关于</a>
+        <a href="#projects">项目</a>
+        <a href="#notes">笔记</a>
+        <a href="#contact">联系</a>
+      </nav>
+
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="切换深浅色主题">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" />
+          <path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5" />
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 13.2A8.6 8.6 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ── Hero ────────────────────────────────────────── -->
+    <section class="hero">
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span>目前开放远程合作</p>
+
+      <h1>你好,我是<em>你的名字</em>。</h1>
+
+      <p class="lead">
+        前端 / 全栈开发者。喜欢把复杂的东西讲简单,把慢的东西做快。<br />
+        最近在做一个小工具,帮人理清每个月到底在为哪些订阅付钱。
+      </p>
+
+      <div class="cta">
+        <a class="btn btn-primary" href="#projects">看看我的项目</a>
+        <a class="btn" href="mailto:you@example.com">发邮件给我</a>
+      </div>
+
+      <ul class="socials">
+        <li><a href="https://github.com/Xlattice0" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="mailto:you@example.com">Email</a></li>
+      </ul>
+    </section>
+
+    <!-- ── 关于 ────────────────────────────────────────── -->
+    <section class="section reveal" id="about">
+      <h2><span class="num">01</span>关于</h2>
+
+      <div class="about">
+        <div class="about-text">
+          <p>
+            我写代码大概 [X] 年了。现在主要用 TypeScript 和 React 做前端,
+            后端喜欢 Node 和 Postgres;偶尔用 Go 写点小东西。
+          </p>
+          <p>
+            我相信「能删掉的代码是最好的代码」。做产品时会先问:这个功能不做,
+            用户会不会真的少点什么。如果答案是不会,那就不做。
+          </p>
+          <p>
+            工作之外喜欢跑步、做饭、读非虚构。也欢迎找我聊一些不相干的话题。
+          </p>
+        </div>
+
+        <dl class="facts">
+          <div><dt>现在</dt><dd>[公司 / 在做的事]</dd></div>
+          <div><dt>所在</dt><dd>[城市],远程优先</dd></div>
+          <div><dt>擅长</dt><dd>TypeScript · React · Node · Postgres</dd></div>
+          <div><dt>正在学</dt><dd>Rust、分布式系统</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- ── 项目 ────────────────────────────────────────── -->
+    <section class="section reveal" id="projects">
+      <h2><span class="num">02</span>项目</h2>
+      <p class="section-lead">挑三个我最想让你看的。</p>
+
+      <div class="grid">
+        <article class="card">
+          <header class="card-head">
+            <h3>订阅管家</h3>
+            <span class="badge">在做</span>
+          </header>
+          <p class="card-desc">
+            把散落在各个平台的会员订阅收进一处,月底告诉你这个月花了多少、
+            哪几个已经三个月没用过。
+          </p>
+          <ul class="tags">
+            <li>TypeScript</li><li>React</li><li>Postgres</li>
+          </ul>
+          <footer class="card-foot">
+            <a href="https://github.com/Xlattice0" target="_blank" rel="noopener">源码 →</a>
+          </footer>
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h3>Markdown 排版器</h3>
+            <span class="badge done">已开源</span>
+          </header>
+          <p class="card-desc">
+            一个只做一件事的 Markdown 转微信公众号排版工具,零配置,
+            粘贴进去直接复制出来。
+          </p>
+          <ul class="tags">
+            <li>Vanilla JS</li><li>CSS</li>
+          </ul>
+          <footer class="card-foot">
+            <a href="https://github.com/Xlattice0" target="_blank" rel="noopener">源码 →</a>
+          </footer>
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h3>这个网站</h3>
+            <span class="badge done">已上线</span>
+          </header>
+          <p class="card-desc">
+            你正在看的页面。手写 HTML/CSS,没有框架、没有构建步骤、没有外部依赖,
+            托管在 GitHub Pages 上。
+          </p>
+          <ul class="tags">
+            <li>HTML</li><li>CSS</li>
+          </ul>
+          <footer class="card-foot">
+            <a href="https://github.com/Xlattice0" target="_blank" rel="noopener">源码 →</a>
+          </footer>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── 笔记 ────────────────────────────────────────── -->
+    <section class="section reveal" id="notes">
+      <h2><span class="num">03</span>笔记</h2>
+      <p class="section-lead">想到什么写什么,不保证更新频率。</p>
+
+      <ul class="list">
+        <li>
+          <a href="#">
+            <time datetime="2025-01-01">2025.01</time>
+            <span>为什么我把博客从框架换回了手写 HTML</span>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <time datetime="2024-11-01">2024.11</time>
+            <span>GitHub Pages + Cloudflare 踩过的三个坑</span>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <time datetime="2024-09-01">2024.09</time>
+            <span>读《清单革命》:检查表为什么救得了人命</span>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ── 联系 ────────────────────────────────────────── -->
+    <section class="section reveal" id="contact">
+      <h2><span class="num">04</span>联系</h2>
+      <p class="section-lead">
+        有想做的项目、想聊的问题,或者只是打个招呼,都可以直接写信给我。
+      </p>
+
+      <a class="mail" href="mailto:you@example.com">
+        <span class="mail-label">Email</span>
+        <span class="mail-addr">you@example.com</span>
+        <span class="mail-arrow" aria-hidden="true">→</span>
+      </a>
+
+      <p class="reply-note">我一般在 1–2 个工作日内回复。</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year">2025</span> 你的名字</p>
+    <p class="footer-meta">手写 HTML,托管于 GitHub Pages</p>
+  </footer>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>
