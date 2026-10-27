@@ -1,61 +1,125 @@
 /* ============================================================
-   app.js — 三件小事:主题切换、年份、滚动出现
-   没有依赖,没有构建步骤。
+   app.js — 首页逻辑
+   主题 / 年份 / 按 games.js 渲染游戏卡 / 导航分隔线
    ============================================================ */
 (function () {
   'use strict';
 
-  /* ── 1. 深浅色主题 ───────────────────────────────────── */
   var root = document.documentElement;
-  var btn = document.getElementById('themeBtn');
+
+  /* ── 主题 ─────────────────────────────────────────────── */
+  var themeBtn = document.getElementById('themeBtn');
 
   function applyTheme(theme) {
     root.dataset.theme = theme;
-    if (btn) {
-      btn.setAttribute(
+    if (themeBtn) {
+      themeBtn.setAttribute(
         'aria-label',
         theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'
       );
     }
   }
 
-  if (btn) {
+  if (themeBtn) {
     applyTheme(root.dataset.theme === 'dark' ? 'dark' : 'light');
-
-    btn.addEventListener('click', function () {
+    themeBtn.addEventListener('click', function () {
       var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
       applyTheme(next);
       try { localStorage.setItem('theme', next); } catch (e) {}
     });
   }
 
-  /* ── 2. 页脚年份 ─────────────────────────────────────── */
-  var year = document.getElementById('year');
-  if (year) year.textContent = String(new Date().getFullYear());
+  /* ── 年份 ─────────────────────────────────────────────── */
+  var yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-  /* ── 3. 滚动到视口时淡入 ─────────────────────────────── */
-  var targets = document.querySelectorAll('.reveal');
+  /* ── 游戏清单 ─────────────────────────────────────────── */
+  var games = Array.isArray(window.GAMES) ? window.GAMES : [];
+  var grid = document.getElementById('gameGrid');
+  var emptyEl = document.getElementById('empty');
+  var countEl = document.getElementById('count');
 
-  if (!('IntersectionObserver' in window)) {
-    // 老浏览器直接显示,不做动效
-    for (var i = 0; i < targets.length; i++) targets[i].classList.add('in');
-  } else {
-    var io = new IntersectionObserver(
-      function (entries) {
+  if (countEl) countEl.textContent = '共 ' + games.length + ' 款';
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  function bestOf(slug) {
+    try {
+      var raw = localStorage.getItem('xg:best:' + slug);
+      var num = raw ? parseInt(raw, 10) : 0;
+      return isNaN(num) ? 0 : num;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function buildCard(game, index) {
+    var num = (index + 1 < 10 ? '0' : '') + (index + 1);
+    var best = bestOf(game.slug);
+
+    var card = document.createElement('article');
+    card.className = 'card';
+    card.style.setProperty('--c1', game.color || '#ff5a1f');
+    card.style.setProperty('--c2', game.color2 || '#3b1d8f');
+
+    card.innerHTML =
+      '<a class="card-link" href="play.html?g=' + encodeURIComponent(game.slug) + '">' +
+        '<div class="cover">' +
+          '<div class="cover-lines"></div>' +
+          '<span class="cover-num">' + num + '</span>' +
+          '<span class="play-pill">▶ 玩</span>' +
+          '<div class="cover-title">' + esc(game.title) +
+            (game.en ? '<span class="cover-en">' + esc(game.en) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div class="card-foot">' +
+            '<span class="tag">' + esc(game.tag || '小游戏') + '</span>' +
+            (best ? '<span class="best">最好 ' + best + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</a>';
+
+    return card;
+  }
+
+  if (grid) {
+    if (!games.length) {
+      if (emptyEl) emptyEl.hidden = false;
+    } else {
+      games.forEach(function (game, i) {
+        grid.appendChild(buildCard(game, i));
+      });
+    }
+  }
+
+  /* ── 卡片入场 ─────────────────────────────────────────── */
+  var hasIO = 'IntersectionObserver' in window;
+  var io = hasIO
+    ? new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add('in');
             io.unobserve(entry.target);
           }
         });
-      },
-      { rootMargin: '0px 0px -12% 0px', threshold: 0.08 }
-    );
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 })
+    : null;
 
-    for (var j = 0; j < targets.length; j++) io.observe(targets[j]);
+  var cards = document.querySelectorAll('.card');
+  for (var i = 0; i < cards.length; i++) {
+    (function (el, idx) {
+      el.style.transitionDelay = (idx % 6) * 70 + 'ms';
+      window.setTimeout(function () { el.style.transitionDelay = '0ms'; }, 1300);
+      if (io) io.observe(el); else el.classList.add('in');
+    })(cards[i], i);
   }
 
-  /* ── 4. 滚动时给导航加分隔线 ─────────────────────────── */
+  /* ── 导航分隔线 ───────────────────────────────────────── */
   var nav = document.querySelector('.nav');
   if (nav) {
     var onScroll = function () {

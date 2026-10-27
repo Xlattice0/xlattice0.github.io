@@ -1,173 +1,168 @@
-# 个人主页 · www.xlattice.top
+# XLattice's Game
 
-纯静态站点,零依赖、零构建。托管 GitHub Pages(`Xlattice0` → 仓库 `xlattice0.github.io`),
-域名 `xlattice.top`(NameSilo 购买,NS 已托管 Cloudflare)。
-
-## 当前状态
-
-| 项目 | 状态 |
-|---|---|
-| 域名注册 | ✅ NameSilo |
-| NS 托管 | ✅ `harmony.ns.cloudflare.com` / `woz.ns.cloudflare.com` |
-| `@` 和 `www` 解析 | ⚠️ **有两条橙云记录,源站是死的,现在访问返回 520** |
-| 邮件收发 | ✅ Cloudflare Email Routing 已开(MX = `route1-3.mx.cloudflare.net`),**别动 MX / SPF** |
-| CAA 记录 | 无,不会影响 Let's Encrypt 签证书 |
-| 站点代码 | ✅ 域名与用户名已填好,只剩个人内容 |
-
-**结论:域名侧完全就绪,唯一要修的是那两条 520 记录。** 剩下就是把文件推上去。
-
-## 最终配置(已写进文件)
-
-| 项 | 值 |
-|---|---|
-| 主域(canonical) | `https://www.xlattice.top` |
-| 备用跳转 | `xlattice.top` → 301 → `www.xlattice.top` |
-| GitHub 仓库 | `Xlattice0/xlattice0.github.io` |
-| GitHub Pages 地址 | `https://xlattice0.github.io/` |
-| DNS 目标 | `xlattice0.github.io` |
+自制小游戏站。纯静态,零依赖、零构建,托管在 GitHub Pages,
+域名 `www.xlattice.top`(NameSilo 购买 → Cloudflare 解析)。
 
 ---
 
-## 文件结构
+## 一、站点结构
 
 ```
 .
-├── index.html          主页(唯一需要改内容的文件)
-├── 404.html            自定义 404
-├── .nojekyll           关掉 Jekyll 处理(别删)
+├── index.html                游戏厅首页(游戏墙)
+├── play.html                 游戏容器页:?g=游戏名
+├── 404.html                  自定义 404
+├── .nojekyll                 关掉 Jekyll(别删)
 ├── assets/
-│   ├── style.css       全部样式,顶部是颜色变量
-│   ├── app.js          主题切换 / 年份 / 滚动淡入
-│   └── favicon.svg     标签页图标
-└── README.md           本文件,可删
+│   ├── style.css             全站样式
+│   ├── app.js                首页逻辑(读清单 → 生成卡片)
+│   ├── games.js              ★ 游戏清单,唯一要手动改的文件
+│   └── favicon.svg           标签页图标
+└── games/
+    └── lattice/
+        └── index.html        《晶格》游戏本体(单文件,自包含)
 ```
 
-> **故意不放 `CNAME` 文件**:自定义域名在 GitHub 设置里填,GitHub 自动生成正确的 CNAME。
-> 手动塞错一个会报 `domain is already taken`。
+设计要点:
+
+- **每个游戏是一个独立文件夹**,跑在 iframe 里,样式和脚本完全隔离。
+  你以后用 Phaser、Unity 导出、甚至纯 DOM 写都行,互不干扰。
+- **加游戏不用碰首页代码**,只改 `assets/games.js`。
+- 封面是**纯 CSS 生成的**(渐变 + 晶格线 + 编号),不需要准备截图。
+  以后想换成真图,给 `games.js` 里的对象加一个 `cover` 字段即可(见第四节)。
+- 成绩存在浏览器 `localStorage`,键名 `xg:best:<游戏名>`,不上传、无账号。
 
 ---
 
-## 第 1 步:改成你自己的内容
+## 二、加一个新游戏(三步)
 
-域名和 GitHub 用户名都填好了,只剩个人资料:
+**第 1 步:建文件夹**
 
-| 搜索 | 换成 | 出现次数 |
-|---|---|---|
-| `你的名字` | 你的名字或昵称 | 4 |
-| `N`(`.brand-mark` 里的 logo 字母) | 你名字首字母 | 1 |
-| `you@example.com` | 你的邮箱 | 4 |
-| `[X] 年`、`[城市]`、`[公司 / 在做的事]` | 真实信息 | 各 1 |
-| 三个 `.card` 项目 | 你的项目 | 3 |
-| 三条 `.list` 笔记 | 你的文章(先当占位也行) | 3 |
+在 `games/` 下建一个目录,名字只能用小写字母、数字、短横线,比如 `games/snake/`。
+里面放一个 `index.html`,这就是游戏入口。它可以是单文件,也可以带 `style.css`、`game.js`、图片:
 
-**顺便白拿一个邮箱**:Cloudflare → Email → Email Routing 加一个目标地址,就能用
-`hello@xlattice.top` 收发信,免费,不用改 MX。填进页面前先确认那个地址能收到邮件。
+```
+games/snake/
+├── index.html
+├── snake.js
+└── cover.png
+```
 
-## 第 2 步:推到 GitHub
+> 注意:游戏内部引用资源要用**相对路径**(`./snake.js`、`./cover.png`),
+> 因为它最终运行在 `games/snake/` 这个地址下。
 
-先在 GitHub 网页上建一个**空仓库**,名字必须叫 `xlattice0.github.io`(用户站点专用名,
-不要建 README),然后再本地推:
+**第 2 步:在 `assets/games.js` 里登记**
+
+打开 `assets/games.js`,照着第一条抄一个对象,加进数组:
+
+```js
+window.GAMES = [
+  { /* 已有:晶格 */ },
+  {
+    slug: 'snake',                 // 必填,必须和文件夹名一致
+    title: '贪吃蛇',                // 显示的名字
+    en: 'Snake',                   // 封面上的英文小字,可省略
+    tag: '街机',                    // 类型标签
+    color: '#22c55e',              // 封面主色
+    color2: '#064e3b',             // 封面副色(渐变终点)
+    date: '2026-11'
+  }
+];
+```
+
+**第 3 步:推上去**
+
+把改动的文件上传到 GitHub 仓库(或在本地 `git push`),等 1 分钟,
+刷新 `https://www.xlattice.top/`,新游戏就出现在墙上了。
+
+---
+
+## 三、游戏和容器页的约定(可选但推荐)
+
+`play.html` 会给游戏提供一个统一外框:返回按钮、标题、全屏、最好成绩。
+游戏本身**不需要**知道这些。如果想让它把最新成绩同步到顶部信息条,
+在游戏里发一条消息就行:
+
+```js
+window.parent.postMessage(
+  { type: 'xg:score', slug: 'snake', score: 120, best: 480 },
+  '*'
+);
+```
+
+容器页收到后会自动更新"最好 480",不用刷新。
+不写也没关系,只是顶部那栏不会实时变化。
+
+---
+
+## 四、想给游戏换真实截图做封面
+
+默认封面是代码生成的。如果你有截图:
+
+1. 把图片放进游戏目录,比如 `games/lattice/cover.jpg`
+2. 在 `games.js` 的对应对象里加一行:
+
+```js
+cover: 'games/lattice/cover.jpg'
+```
+
+`app.js` 会优先用这张图当封面(建议 16:10,宽度 800px 左右,jpg 压缩后 < 200KB)。
+
+---
+
+## 五、本地预览
+
+直接双击 `index.html` 就能看——**但这个站大量使用 `localStorage` 和 iframe,
+用本地服务器更接近线上**:
 
 ```bash
-cd 解压后的目录
-git init
-git add .
-git commit -m "init: personal site"
-git branch -M main
-git remote add origin https://github.com/Xlattice0/xlattice0.github.io.git
-git push -u origin main
+# 任选一种,在站点根目录执行
+npx serve .
+# 或者
+python -m http.server 8000
 ```
 
-仓库必须 **public**——免费账号的 Pages 只能从公开仓库发布。
+然后打开 `http://localhost:8000`。
 
-## 第 3 步:开启 Pages 并先验证
-
-仓库 → **Settings → Pages**
-
-- Source:`Deploy from a branch`
-- Branch:`main`,目录 `/ (root)`
-- Save
-
-等 1 分钟,打开 `https://xlattice0.github.io/`。**这一步必须能看到页面**,再往下做 DNS;
-否则后面所有 522 都是这里没发成功引起的。
-
-## 第 4 步:改 Cloudflare DNS(关键)
-
-Cloudflare → `xlattice.top` → **DNS → Records**。
-
-先处理那两条橙云的 A 记录(520 的元凶):直接**删掉**,或在同一条上改成下面这样。
-目标是:
-
-| 类型 | 名称 | 内容 | 代理状态 |
-|---|---|---|---|
-| CNAME | `www` | `xlattice0.github.io` | **仅 DNS(灰云)** |
-| CNAME | `@` | `xlattice0.github.io` | **仅 DNS(灰云)** |
-
-四个要点:
-
-1. **末尾不带仓库名**,是 `xlattice0.github.io`,不是 `xlattice0.github.io/xxx`。
-2. **先灰云**。GitHub 必须直连源站才能签发证书,橙云会挡住验证。
-3. 根域用 CNAME 成立,是因为 Cloudflare 支持**根域展平**;用 A 记录也行,指向
-   `185.199.108.153`、`185.199.109.153`、`185.199.110.153`、`185.199.111.153`。
-4. **MX、TXT(SPF)、`_dmarc` 一条都别动**,那是邮件用的。
-
-## 第 5 步:绑定域名 + 开 HTTPS
-
-1. Settings → Pages → **Custom domain** 填 `www.xlattice.top` → Save
-2. 等 GitHub 签发 Let's Encrypt 证书(几分钟,最长 24 小时)。用命令看进度:
-
-   ```bash
-   nslookup www.xlattice.top 1.1.1.1
-   curl -I https://www.xlattice.top
-   ```
-
-3. 证书就绪后 **Enforce HTTPS** 变为可勾选,勾上。
-
-完成后 `http://xlattice.top` 会被 GitHub 301 到 `https://www.xlattice.top`,
-`www` 和不带 `www` 都能用。
-
-## 第 6 步(可选):开 Cloudflare 代理
-
-想用 CDN / 缓存 / WAF,再把灰云点成橙云,**同时**必须改:
-
-**SSL/TLS → Overview → Full (strict)**
-
-选 Flexible 会无限 301(`ERR_TOO_MANY_REDIRECTS`),这套组合最经典的坑。
-开了代理后再开 **SSL/TLS → Edge Certificates → Always Use HTTPS**。
-
-CAA 可以不加;要加必须包含 `letsencrypt.org`,否则 GitHub 续证书会失败。
+> 注意:`file://` 下部分浏览器会限制 iframe 和存储,线上不会有这个问题。
 
 ---
 
-## 常见问题
+## 六、当前线上状态
 
-**访问 520 / 522**
-520 = 记录指向的服务不存在(当前状态);522 = Cloudflare 到 GitHub 超时。
-先确认第 3 步的 `github.io` 地址能打开,再核对 CNAME 值有没有多写路径。
+| 项目 | 值 |
+|---|---|
+| 站点 | `https://www.xlattice.top` |
+| 备用 | `https://xlattice.top` → 301 → www |
+| 仓库 | `Xlattice0/xlattice0.github.io` |
+| 托管 | GitHub Pages,分支 `main` / 根目录 |
+| DNS | Cloudflare,`www` 与 `@` 均 CNAME 到 `xlattice0.github.io`(**灰云**) |
+| 邮件 | Cloudflare Email Routing 正常(MX + SPF + DKIM 未动) |
 
-**525 / 526**
-SSL 模式不对或证书还没签好。GitHub Pages 用正规 Let's Encrypt,选 **Full (strict)** 就能过;
-若仍报错,通常是自定义域名还没验证完,回第 5 步等。
+### 关于 Cloudflare 橙云
 
-**报 `domain is already taken`**
-这个域名曾被别的 GitHub 账号占用。按提示加一条 TXT:
-`_github-pages-challenge-Xlattice0`(值 GitHub 会给),验证通过后重试。
+现在是灰云(仅 DNS)。想开 CDN/缓存/防护可以点成橙云,但**必须**同时把
+SSL/TLS 模式改成 **Full (strict)**,否则会出现 `ERR_TOO_MANY_REDIRECTS`。
 
-**改动没生效**
-Pages 构建有几十秒延迟,再加 Cloudflare 缓存。`Ctrl + F5` 或隐身窗口看;
-必要时 Cloudflare → Caching → Purge Everything。
+### 什么时候需要重新构建
 
-**国内访问慢 / 偶尔打不开**
-GitHub Pages 的 IP 在国内不稳定,是正常现象,不是配置错误。
+本站没有构建步骤,改完文件推上去就行。Pages 大约 30–60 秒生效,
+浏览器有缓存就 `Ctrl + F5`。
 
-**.top 域名有什么坑**
-没有 ICP 问题(服务器在境外,不备案)。唯一注意:`.top` 曾被大量垃圾站使用,
-部分邮件网关对它的信任度偏低,发重要邮件前先测一下送达率。
+---
 
-**想加文章页**
-复制 `index.html` 为 `posts/hello.html`,替换正文,再把笔记列表里的 `href="#"`
-改成 `/posts/hello.html`。文章多了再考虑 Astro / Hexo。
+## 七、《晶格》怎么玩
 
-## 许可
+4×4 的格子,滑动(手机)或方向键(桌面)让所有方块往一个方向移动,
+两个相同的数字撞在一起就合并成两倍。目标是把数字做到 2048,
+或者把格子填满、再也动不了为止。
 
-页面代码随便用,内容换成你自己的就行。
+- 手机:在棋盘上滑动
+- 桌面:方向键 / WASD / HJKL,也可以按住鼠标拖
+- 分数实时写入本地,关掉浏览器也在
+
+---
+
+## 八、许可
+
+代码随便用。游戏和内容是你的。

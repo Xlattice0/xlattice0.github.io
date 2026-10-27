@@ -3,40 +3,44 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>404 · 页面走丢了</title>
+  <title>404 · 这一格是空的</title>
   <meta name="robots" content="noindex" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/assets/style.css" />
   <style>
-    .wrap {
+    .notfound {
       min-height: 100vh;
+      min-height: 100dvh;
       display: grid;
       place-items: center;
       padding: 24px;
       text-align: center;
+      background: var(--paper);
     }
     .code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: clamp(4rem, 18vw, 8rem);
+      margin: 0 0 10px;
+      font-family: var(--mono);
+      font-size: clamp(4.5rem, 20vw, 9rem);
       font-weight: 700;
-      line-height: 1;
-      letter-spacing: -0.04em;
-      background: linear-gradient(120deg, var(--accent), var(--accent-2));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin: 0 0 12px;
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+      color: var(--accent);
     }
-    .msg { color: var(--muted); margin: 0 0 28px; }
+    .msg {
+      margin: 0 auto 26px;
+      max-width: 22em;
+      color: var(--muted);
+      font-size: 15px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <main class="notfound">
     <div>
       <p class="code">404</p>
-      <p class="msg">这个地址没有内容,可能是链接过期了,或者我手滑打错了。</p>
-      <a class="btn btn-primary" href="/">回到首页</a>
+      <p class="msg">这一格是空的。链接可能过期了,或者地址打错了。</p>
+      <a class="btn btn-primary" href="/">回到游戏厅</a>
     </div>
-  </div>
+  </main>
 </body>
 </html>
