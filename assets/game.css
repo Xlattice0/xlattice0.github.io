@@ -1,0 +1,128 @@
+/* Shared chrome for games running inside the play shell. */
+
+html, body { height: 100%; }
+
+body {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-items: safe center;
+  padding: 18px 14px;
+  overflow-x: hidden;
+  background:
+    radial-gradient(900px 380px at 50% -20%, var(--bg-tint), transparent 60%),
+    var(--stage);
+}
+
+.game {
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.standalone-back { align-self: flex-start; }
+html.framed .standalone-back { display: none; }
+
+.hud { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hud .spacer { margin-left: auto; }
+
+.stat {
+  min-width: 76px;
+  padding: 6px 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.stat-k { display: block; color: var(--muted); font-size: 11px; font-weight: 650; line-height: 1.2; }
+.stat b {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.hint { text-align: center; color: var(--muted); font-size: 0.82rem; }
+
+.canvas-wrap {
+  position: relative;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  touch-action: none;
+}
+.canvas-wrap canvas { display: block; touch-action: none; background: transparent; }
+
+.banner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-align: center;
+  pointer-events: none;
+}
+[data-theme="dark"] .banner { background: rgba(12, 14, 18, 0.72); }
+
+.pad { display: grid; justify-items: center; gap: 8px; }
+.pad-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pad button {
+  min-width: 56px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.pad button:hover { border-color: var(--line-strong); }
+
+.toast { text-align: center; color: var(--accent); font-weight: 700; font-size: 0.92rem; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 18, 22, 0.46);
+}
+.dialog {
+  width: min(100%, 320px);
+  padding: 24px 22px 20px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+.dialog-kicker {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.dialog-score { margin: 10px 0 16px; }
+.dialog-score b {
+  display: block;
+  font-size: 2.7rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.dialog-score span { color: var(--muted); font-size: 0.85rem; }
+.dialog .btn { width: 100%; }

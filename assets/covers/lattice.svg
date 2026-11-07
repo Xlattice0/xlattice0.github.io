@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" fill="none">
+  <rect width="640" height="400" fill="#E7F3EF"/>
+  <g transform="translate(159 39)">
+    <rect width="322" height="322" rx="28" fill="#F7FBFA"/>
+    <g transform="translate(18 18)" fill="#0F6E5C" font-family="ui-sans-serif, system-ui, sans-serif" font-size="26" font-weight="700">
+      <rect width="64" height="64" rx="14" fill="#D5EBE4"/>
+      <rect x="74" width="64" height="64" rx="14"/>
+      <text x="106" y="32" fill="#F7FFFC" text-anchor="middle" dominant-baseline="central">2</text>
+      <rect x="148" width="64" height="64" rx="14" fill="#D5EBE4"/>
+      <rect x="222" width="64" height="64" rx="14" fill="#0C8570"/>
+      <text x="254" y="32" fill="#F7FFFC" text-anchor="middle" dominant-baseline="central">4</text>
+
+      <rect y="74" width="64" height="64" rx="14"/>
+      <text x="32" y="106" fill="#F7FFFC" text-anchor="middle" dominant-baseline="central">2</text>
+      <rect x="74" y="74" width="64" height="64" rx="14" fill="#0C8570"/>
+      <text x="106" y="106" fill="#F7FFFC" text-anchor="middle" dominant-baseline="central">4</text>
+      <rect x="148" y="74" width="64" height="64" rx="14" fill="#C47B12"/>
+      <text x="180" y="106" fill="#FFF8EE" text-anchor="middle" dominant-baseline="central">8</text>
+      <rect x="222" y="74" width="64" height="64" rx="14" fill="#D5EBE4"/>
+
+      <rect y="148" width="64" height="64" rx="14" fill="#D5EBE4"/>
+      <rect x="74" y="148" width="64" height="64" rx="14" fill="#D5EBE4"/>
+      <rect x="148" y="148" width="64" height="64" rx="14"/>
+      <text x="180" y="180" fill="#F7FFFC" text-anchor="middle" dominant-baseline="central">2</text>
+      <rect x="222" y="148" width="64" height="64" rx="14" fill="#C2410C"/>
+      <text x="254" y="180" fill="#FFF8F4" text-anchor="middle" dominant-baseline="central" font-size="22">16</text>
+
+      <rect y="222" width="64" height="64" rx="14" fill="#0C8570"/>
+      <text x="32" y="254" fill="#F7FFFC" text-anchor="middle" dominant-baseline="central">4</text>
+      <rect x="74" y="222" width="64" height="64" rx="14" fill="#D5EBE4"/>
+      <rect x="148" y="222" width="64" height="64" rx="14" fill="#D5EBE4"/>
+      <rect x="222" y="222" width="64" height="64" rx="14" fill="#C47B12"/>
+      <text x="254" y="254" fill="#FFF8EE" text-anchor="middle" dominant-baseline="central">8</text>
+    </g>
+  </g>
+</svg>

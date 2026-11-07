@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>贪吃蛇 · XLattice</title>
+  <meta name="theme-color" content="#e8eaee" />
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+  <link rel="stylesheet" href="../../assets/tokens.css" />
+  <link rel="stylesheet" href="../../assets/base.css" />
+  <link rel="stylesheet" href="../../assets/game.css" />
+  <script src="../../assets/boot.js"></script>
+</head>
+<body>
+  <div class="game">
+    <a class="btn btn-ghost standalone-back" href="../../">返回游戏桌</a>
+    <header class="hud">
+      <div class="stat"><span class="stat-k">分数</span><b id="score">0</b></div>
+      <div class="stat"><span class="stat-k">最好</span><b id="best">0</b></div>
+      <button class="btn btn-ghost spacer" id="primary" type="button">开始</button>
+    </header>
+    <div class="canvas-wrap" id="wrap">
+      <canvas id="board" width="360" height="360" aria-label="贪吃蛇画面"></canvas>
+      <div class="banner" id="banner">按方向键或滑动开始</div>
+    </div>
+    <div class="pad" aria-label="方向控制">
+      <button type="button" data-dir="0,-1" aria-label="向上">↑</button>
+      <div class="pad-row">
+        <button type="button" data-dir="-1,0" aria-label="向左">←</button>
+        <button type="button" data-dir="0,1" aria-label="向下">↓</button>
+        <button type="button" data-dir="1,0" aria-label="向右">→</button>
+      </div>
+    </div>
+    <p class="hint" id="status">方向键 / WASD / 滑动。空格暂停。</p>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+    <div class="overlay" id="overlay" hidden>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+        <p class="dialog-kicker" id="ovTitle">这局结束</p>
+        <p class="dialog-score"><b id="finalScore">0</b><span id="finalMeta">最好 0</span></p>
+        <button class="btn btn-accent" id="againBtn" type="button">再来一局</button>
+      </div>
+    </div>
+  </div>
+  <script src="../../assets/game-bridge.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var COLS = 18;
+      var ROWS = 18;
+      var SLUG = 'snake';
+      var wrap = document.getElementById('wrap');
+      var canvas = document.getElementById('board');
+      var ctx = canvas.getContext('2d');
+      var scoreEl = document.getElementById('score');
+      var bestEl = document.getElementById('best');
+      var primary = document.getElementById('primary');
+      var banner = document.getElementById('banner');
+      var overlay = document.getElementById('overlay');
+      var againBtn = document.getElementById('againBtn');
+      var live = document.getElementById('live');
+
+      var snake, dir, queue, food, score, best, delay, eaten, mode, timer, view;
+
+      best = window.XGame.readBest(SLUG);
+      bestEl.textContent = String(best);
+
+      function sync() {
+        scoreEl.textContent = String(score);
+        bestEl.textContent = String(best);
+        if (mode === 'ready') primary.textContent = '开始';
+        else if (mode === 'run') primary.textContent = '暂停';
+        else if (mode === 'pause') primary.textContent = '继续';
+        else primary.textContent = '新游戏';
+      }
+
+      function spawnFood() {
+        var open = [];
+        for (var y = 0; y < ROWS; y++) {
+          for (var x = 0; x < COLS; x++) {
+            var taken = false;
+            for (var i = 0; i < snake.length; i++) {
+              if (snake[i].x === x && snake[i].y === y) { taken = true; break; }
+            }
+            if (!taken) open.push({ x: x, y: y });
+          }
+        }
+        if (!open.length) return null;
+        return open[Math.floor(Math.random() * open.length)];
+      }
+
+      function roundRect(x, y, w, h, r) {
+        r = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      function draw() {
+        if (!view) return;
+        var dark = document.documentElement.dataset.theme === 'dark';
+        var bg = dark ? '#14181f' : '#fbfcfd';
+        var grid = dark ? 'rgba(255,255,255,0.07)' : 'rgba(15,40,32,0.09)';
+        var body = dark ? '#7ddec8' : '#0f6e5c';
+        var head = dark ? '#e7fff8' : '#08382f';
+        var eye = dark ? '#08382f' : '#f4fffb';
+        var cell = view / COLS;
+
+        ctx.setTransform(canvas.width / view, 0, 0, canvas.height / view, 0, 0);
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, view, view);
+        ctx.strokeStyle = grid;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (var i = 1; i < COLS; i++) {
+          ctx.moveTo(i * cell + 0.5, 0);
+          ctx.lineTo(i * cell + 0.5, view);
+          ctx.moveTo(0, i * cell + 0.5);
+          ctx.lineTo(view, i * cell + 0.5);
+        }
+        ctx.stroke();
+
+        if (food) {
+          ctx.fillStyle = '#e08a12';
+          ctx.beginPath();
+          ctx.arc(food.x * cell + cell / 2, food.y * cell + cell / 2, cell * 0.28, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        for (var i = snake.length - 1; i >= 0; i--) {
+          var s = snake[i];
+          var pad = cell * 0.12;
+          ctx.fillStyle = i === 0 ? head : body;
+          roundRect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2, cell * 0.28);
+          ctx.fill();
+          if (i === 0) {
+            var cx = s.x * cell + cell / 2;
+            var cy = s.y * cell + cell / 2;
+            var px = -dir.y;
+            var py = dir.x;
+            var ox = dir.x * cell * 0.14;
+            var oy = dir.y * cell * 0.14;
+            var spread = cell * 0.14;
+            ctx.fillStyle = eye;
+            ctx.beginPath();
+            ctx.arc(cx + ox + px * spread, cy + oy + py * spread, Math.max(1.4, cell * 0.065), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + ox - px * spread, cy + oy - py * spread, Math.max(1.4, cell * 0.065), 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      function showEnd(title) {
+        mode = 'dead';
+        clearTimeout(timer);
+        banner.hidden = true;
+        document.getElementById('ovTitle').textContent = title;
+        document.getElementById('finalScore').textContent = String(score);
+        document.getElementById('finalMeta').textContent = '最好 ' + best;
+        overlay.hidden = false;
+        live.textContent = title + '，分数 ' + score;
+        sync();
+        againBtn.focus();
+      }
+
+      function step() {
+        if (queue.length) dir = queue.shift();
+        var head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+        if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS) {
+          showEnd('撞墙了');
+          return;
+        }
+        var eating = food && head.x === food.x && head.y === food.y;
+        for (var i = 0; i < snake.length; i++) {
+          if (!eating && i === snake.length - 1) continue;
+          if (snake[i].x === head.x && snake[i].y === head.y) {
+            showEnd('咬到自己了');
+            return;
+          }
+        }
+        snake.unshift(head);
+        if (eating) {
+          eaten += 1;
+          score += 10;
+          delay = Math.max(68, 160 - eaten * 6);
+          food = spawnFood();
+          if (score > best) {
+            best = score;
+            window.XGame.publish(SLUG, score, best);
+          }
+          if (!food) {
+            draw();
+            sync();
+            showEnd('格子满了');
+            return;
+          }
+        } else {
+          snake.pop();
+        }
+        draw();
+        sync();
+      }
+
+      function tick() {
+        if (mode !== 'run') return;
+        step();
+        if (mode === 'run') timer = setTimeout(tick, delay);
+      }
+
+      function start() {
+        if (mode === 'run' || mode === 'dead') return;
+        mode = 'run';
+        banner.hidden = true;
+        clearTimeout(timer);
+        sync();
+        tick();
+      }
+
+      function pause() {
+        if (mode !== 'run') return;
+        mode = 'pause';
+        clearTimeout(timer);
+        banner.hidden = false;
+        banner.textContent = '已暂停';
+        sync();
+      }
+
+      function resume() {
+        if (mode !== 'pause') return;
+        mode = 'run';
+        banner.hidden = true;
+        sync();
+        tick();
+      }
+
+      /* Queue at most two turns so a quick corner isn't swallowed or reversed. */
+      function setDir(x, y) {
+        if (mode === 'dead') return;
+        var last = queue.length ? queue[queue.length - 1] : dir;
+        if (last.x === -x && last.y === -y) return;
+        if (last.x === x && last.y === y) {
+          if (mode === 'ready') start();
+          return;
+        }
+        if (queue.length < 2) queue.push({ x: x, y: y });
+        if (mode === 'ready') start();
+      }
+
+      function reset() {
+        clearTimeout(timer);
+        snake = [{ x: 5, y: 9 }, { x: 4, y: 9 }, { x: 3, y: 9 }];
+        dir = { x: 1, y: 0 };
+        queue = [];
+        score = 0;
+        eaten = 0;
+        delay = 160;
+        mode = 'ready';
+        food = spawnFood();
+        overlay.hidden = true;
+        banner.hidden = false;
+        banner.textContent = '按方向键或滑动开始';
+        sync();
+        draw();
+      }
+
+      var keyMap = {
+        arrowleft: [-1, 0], arrowright: [1, 0], arrowup: [0, -1], arrowdown: [0, 1],
+        a: [-1, 0], d: [1, 0], w: [0, -1], s: [0, 1]
+      };
+
+      document.addEventListener('keydown', function (e) {
+        var k = String(e.key).toLowerCase();
+        if (keyMap[k]) {
+          e.preventDefault();
+          setDir(keyMap[k][0], keyMap[k][1]);
+          return;
+        }
+        if (e.key !== ' ' && e.code !== 'Space') return;
+        if (e.repeat) return;
+        if (e.target && e.target.closest && e.target.closest('button')) return;
+        e.preventDefault();
+        if (mode === 'dead') reset();
+        else if (mode === 'ready') start();
+        else if (mode === 'run') pause();
+        else resume();
+      });
+
+      primary.addEventListener('click', function () {
+        if (mode === 'dead') reset();
+        else if (mode === 'ready') start();
+        else if (mode === 'run') pause();
+        else resume();
+      });
+      againBtn.addEventListener('click', reset);
+
+      var buttons = document.querySelectorAll('[data-dir]');
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].addEventListener('click', function () {
+          var parts = this.dataset.dir.split(',');
+          setDir(Number(parts[0]), Number(parts[1]));
+        });
+      }
+
+      var sx = 0, sy = 0, tracking = false;
+      canvas.addEventListener('pointerdown', function (e) {
+        tracking = true;
+        sx = e.clientX;
+        sy = e.clientY;
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      });
+      canvas.addEventListener('pointerup', function (e) {
+        if (!tracking) return;
+        tracking = false;
+        var dx = e.clientX - sx;
+        var dy = e.clientY - sy;
+        if (Math.hypot(dx, dy) < 18) return;
+        if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
+        else setDir(0, dy > 0 ? 1 : -1);
+      });
+
+      function resize() {
+        var width = wrap.clientWidth || Math.min(520, window.innerWidth - 28);
+        if (!width) return;
+        view = Math.max(160, Math.floor(width));
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(view * dpr);
+        canvas.height = Math.floor(view * dpr);
+        canvas.style.width = view + 'px';
+        canvas.style.height = view + 'px';
+        draw();
+      }
+
+      if (window.ResizeObserver) new ResizeObserver(resize).observe(wrap);
+      else window.addEventListener('resize', resize);
+      new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      reset();
+      resize();
+    })();
+  </script>
+</body>
+</html>

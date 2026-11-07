@@ -2,341 +2,109 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>晶格 · Lattice</title>
-  <meta name="theme-color" content="#07070b" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>晶格 · XLattice</title>
+  <meta name="theme-color" content="#e8eaee" />
   <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
-
-  <script>
-    (function () {
-      var saved = null;
-      try { saved = localStorage.getItem('theme'); } catch (e) {}
-      var dark = saved ? saved === 'dark' : true;
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    })();
-  </script>
-
+  <link rel="stylesheet" href="../../assets/tokens.css" />
+  <link rel="stylesheet" href="../../assets/base.css" />
+  <link rel="stylesheet" href="../../assets/game.css" />
+  <script src="../../assets/boot.js"></script>
   <style>
-    :root {
-      --bg: #07070b;
-      --panel: #0e0e16;
-      --line: rgba(255, 255, 255, 0.09);
-      --text: #f4f2ec;
-      --dim: #8d8798;
-      --accent: #ff6b35;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
-        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body { height: 100%; }
-
-    body {
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding: 14px;
-      overflow: hidden;
-      background:
-        radial-gradient(120% 90% at 50% -20%, #1a1430 0%, #07070b 60%),
-        var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      -webkit-font-smoothing: antialiased;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .wrap {
-      --size: min(92vw, 58dvh, 500px);
-      width: 100%;
-      max-width: 540px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    /* ── 顶部信息条 ── */
-    .hud {
-      display: flex;
-      align-items: stretch;
-      gap: 9px;
-    }
-
-    .hud-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      padding: 7px 15px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--panel);
-      line-height: 1.15;
-    }
-
-    .hud-cell span {
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 0.16em;
-      color: var(--dim);
-      text-transform: uppercase;
-    }
-
-    .hud-cell b {
-      font-size: 19px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.02em;
-    }
-
-    .new {
-      margin-left: auto;
-      align-self: stretch;
-      padding: 0 18px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--panel);
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 13.5px;
-      font-weight: 550;
-      cursor: pointer;
-      transition: border-color 0.2s ease, transform 0.15s ease, background-color 0.2s ease;
-    }
-
-    .new:hover { border-color: rgba(255, 255, 255, 0.24); transform: translateY(-1px); }
-    .new:active { transform: translateY(0) scale(0.985); }
-
-    /* ── 棋盘 ── */
     .board {
-      position: relative;
-      width: var(--size);
-      height: var(--size);
+      width: min(100%, 520px, calc(100dvh - 190px));
+      aspect-ratio: 1;
       margin: 0 auto;
-      padding: 8px;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       grid-template-rows: repeat(4, 1fr);
       gap: 8px;
+      padding: 8px;
       border: 1px solid var(--line);
       border-radius: 20px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 40%),
-        var(--panel);
-      box-shadow: 0 40px 90px -50px #000, inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      background: var(--surface);
+      box-shadow: var(--shadow);
       touch-action: none;
       user-select: none;
-      -webkit-user-select: none;
     }
-
     .cell {
-      position: relative;
       display: grid;
       place-items: center;
-      border-radius: 11px;
-      background: rgba(255, 255, 255, 0.035);
-      box-shadow: none;
-      color: transparent;
-      font-size: calc(var(--size) / 9.5);
+      border-radius: 12px;
+      background: rgba(23, 25, 30, 0.05);
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-      letter-spacing: -0.03em;
-      transition: background-color 0.12s ease, box-shadow 0.25s ease, color 0.12s ease;
-      will-change: transform;
-    }
-
-    .cell[data-v="128"],
-    .cell[data-v="256"],
-    .cell[data-v="512"],
-    .cell[data-v="1024"],
-    .cell[data-v="2048"] { font-size: calc(var(--size) / 11.5); }
-
-    @keyframes pop {
-      0% { transform: scale(0.82); }
-      62% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    .cell.pop { animation: pop 0.17s cubic-bezier(0.2, 0.7, 0.3, 1); }
-
-    /* ── 提示 ── */
-    .tips {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-size: 12px;
-      color: var(--dim);
-      letter-spacing: 0.01em;
-    }
-
-    .tips .sep { opacity: 0.5; }
-
-    @media (hover: none) {
-      .tips .desk { display: none; }
-    }
-
-    @media (hover: hover) {
-      .tips .touch { display: none; }
-    }
-
-    /* ── 结束遮罩 ── */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: rgba(6, 6, 10, 0.84);
-      -webkit-backdrop-filter: blur(7px);
-      backdrop-filter: blur(7px);
-      animation: fade 0.28s ease both;
-    }
-
-    .overlay[hidden] { display: none; }
-
-    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
-    .panel {
-      width: 100%;
-      max-width: 300px;
-      padding: 26px 26px 24px;
-      border: 1px solid rgba(255, 255, 255, 0.11);
-      border-radius: 20px;
-      background: linear-gradient(180deg, #17131f, #0b0b11);
-      box-shadow: 0 40px 90px -40px #000;
-      text-align: center;
-    }
-
-    .ov-tag {
-      margin: 0 0 12px;
-      font-family: var(--mono);
-      font-size: 10.5px;
-      letter-spacing: 0.3em;
-      color: var(--dim);
-      text-transform: uppercase;
-    }
-
-    .ov-score {
-      margin: 0 0 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .ov-score b {
-      font-size: 46px;
-      line-height: 1;
       letter-spacing: -0.04em;
-      color: #fff;
+      font-size: clamp(1.15rem, 5.6vw, 2rem);
     }
-
-    .ov-score span {
-      font-family: var(--mono);
-      font-size: 11.5px;
-      letter-spacing: 0.08em;
-      color: var(--dim);
-    }
-
-    .panel .new {
-      margin: 0;
-      width: 100%;
-      padding: 12px 0;
-      background: var(--accent);
-      border-color: transparent;
-      color: #1a0b04;
-      font-weight: 650;
-      font-size: 14.5px;
-    }
-
-    .panel .new:hover { background: #ff7d4d; }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
+    [data-theme="dark"] .cell { background: rgba(255, 255, 255, 0.05); }
+    .cell[data-len="3"] { font-size: clamp(1rem, 4.6vw, 1.55rem); }
+    .cell[data-len="4"] { font-size: clamp(0.85rem, 3.8vw, 1.25rem); }
+    @keyframes pop { from { transform: scale(0.84); } to { transform: scale(1); } }
+    .cell.pop { animation: pop 0.16s ease; }
   </style>
 </head>
-
 <body>
-  <div class="wrap">
+  <div class="game">
+    <a class="btn btn-ghost standalone-back" href="../../">返回游戏桌</a>
     <header class="hud">
-      <div class="hud-cell"><span>分数</span><b id="score">0</b></div>
-      <div class="hud-cell"><span>最好</span><b id="best">0</b></div>
-      <button class="new" id="newBtn" type="button">新游戏</button>
+      <div class="stat"><span class="stat-k">分数</span><b id="score">0</b></div>
+      <div class="stat"><span class="stat-k">最好</span><b id="best">0</b></div>
+      <button class="btn btn-ghost spacer" id="newBtn" type="button">新游戏</button>
     </header>
-
-    <main class="board" id="board" aria-label="晶格棋盘"></main>
-
-    <footer class="tips">
-      <span class="touch">滑动屏幕移动</span>
-      <span class="desk">方向键 / WASD 移动</span>
-      <span class="sep">·</span>
-      <span>相同数字合并</span>
-    </footer>
-
+    <div class="board" id="board" role="group" aria-label="晶格棋盘"></div>
+    <p class="toast" id="toast" hidden>到 2048 了。还可以继续。</p>
+    <p class="hint">方向键、WASD，或在棋盘上滑动。相同数字会合并。</p>
+    <p class="sr-only" id="live" aria-live="polite"></p>
     <div class="overlay" id="overlay" hidden>
-      <div class="panel" role="dialog" aria-label="游戏结束">
-        <p class="ov-tag">Game Over</p>
-        <p class="ov-score">
-          <b id="finalScore">0</b>
-          <span id="ovBest">最好 0</span>
-        </p>
-        <button class="new" id="againBtn" type="button">再来一局</button>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+        <p class="dialog-kicker" id="ovTitle">这局结束</p>
+        <p class="dialog-score"><b id="finalScore">0</b><span id="finalMeta">最好 0</span></p>
+        <button class="btn btn-accent" id="againBtn" type="button">再来一局</button>
       </div>
     </div>
   </div>
-
+  <script src="../../assets/game-bridge.js"></script>
   <script>
     (function () {
       'use strict';
 
       var N = 4;
-      var KEY = 'xg:best:lattice';
       var SLUG = 'lattice';
-
       var boardEl = document.getElementById('board');
       var scoreEl = document.getElementById('score');
       var bestEl = document.getElementById('best');
       var overlay = document.getElementById('overlay');
       var finalEl = document.getElementById('finalScore');
-      var ovBestEl = document.getElementById('ovBest');
+      var metaEl = document.getElementById('finalMeta');
+      var toast = document.getElementById('toast');
+      var live = document.getElementById('live');
+      var againBtn = document.getElementById('againBtn');
 
       var cells = [];
       var grid = [];
       var prev = [];
       var score = 0;
-      var best = 0;
+      var best = window.XGame.readBest(SLUG);
       var over = false;
+      var reached = false;
 
-      try { best = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch (e) { best = 0; }
-
-      /* 建格子 */
       for (var i = 0; i < N * N; i++) {
         var cell = document.createElement('div');
         cell.className = 'cell';
-        cell.dataset.v = '0';
+        cell.setAttribute('aria-label', '空');
         boardEl.appendChild(cell);
         cells.push(cell);
       }
 
-      /* 数值越大,颜色从冷紫走到暖橙 —— 这就是"The lattice heats up" */
       function palette(v) {
-        var t = Math.log2(v);            // 1 (2) … 11 (2048)
-        var hue = 236 - t * 21;          // 236 → 5
-        var sat = 26 + t * 5;
-        var light = 15 + t * 4.2;
+        var t = Math.min(Math.log2(v), 12);
+        var hue = 168 - t * 12;
+        var sat = 46 + t * 4;
+        var light = 26 + t * 3.1;
         return {
           bg: 'hsl(' + hue + ' ' + sat + '% ' + light + '%)',
-          glow: 'hsla(' + hue + ' 92% 58% / 0.45)'
+          fg: light > 58 ? '#1a140c' : '#f7fbfa'
         };
       }
 
@@ -348,42 +116,24 @@
         return out;
       }
 
-      function saveBest() {
-        try { localStorage.setItem(KEY, String(best)); } catch (e) {}
-        try {
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage(
-              { type: 'xg:score', slug: SLUG, score: score, best: best },
-              '*'
-            );
-          }
-        } catch (e) {}
-      }
-
       function render() {
         for (var r = 0; r < N; r++) {
           for (var c = 0; c < N; c++) {
             var idx = r * N + c;
             var v = grid[r][c];
             var el = cells[idx];
-
             el.dataset.v = v ? String(v) : '0';
+            el.dataset.len = v ? String(String(v).length) : '0';
             el.textContent = v ? String(v) : '';
-
+            el.setAttribute('aria-label', v ? String(v) : '空');
             if (v) {
               var p = palette(v);
               el.style.background = p.bg;
-              el.style.color = '#fdfbff';
-              el.style.boxShadow =
-                '0 0 0 1px rgba(255,255,255,0.10), 0 10px 26px -14px ' + p.glow +
-                ', inset 0 1px 0 rgba(255,255,255,0.16)';
+              el.style.color = p.fg;
             } else {
-              el.style.background = 'rgba(255,255,255,0.035)';
-              el.style.color = 'transparent';
-              el.style.boxShadow = 'none';
+              el.style.background = '';
+              el.style.color = '';
             }
-
-            // 新出现或刚合并的格子弹一下
             if (v && prev[idx] !== v) {
               el.classList.remove('pop');
               void el.offsetWidth;
@@ -391,13 +141,12 @@
             }
           }
         }
-
         prev = flat();
         scoreEl.textContent = String(score);
-
         if (score > best) {
           best = score;
-          saveBest();
+          window.XGame.publish(SLUG, score, best);
+          live.textContent = '分数 ' + score;
         }
         bestEl.textContent = String(best);
       }
@@ -405,9 +154,7 @@
       function empties() {
         var out = [];
         for (var r = 0; r < N; r++) {
-          for (var c = 0; c < N; c++) {
-            if (!grid[r][c]) out.push([r, c]);
-          }
+          for (var c = 0; c < N; c++) if (!grid[r][c]) out.push([r, c]);
         }
         return out;
       }
@@ -419,6 +166,7 @@
         grid[pick[0]][pick[1]] = Math.random() < 0.9 ? 2 : 4;
       }
 
+      /* Merge a line toward index 0. Each tile merges at most once. */
       function slide(line) {
         var vals = line.filter(Boolean);
         var out = [];
@@ -448,12 +196,33 @@
         return false;
       }
 
+      function celebrate() {
+        if (reached) return;
+        for (var r = 0; r < N; r++) {
+          for (var c = 0; c < N; c++) {
+            if (grid[r][c] >= 2048) {
+              reached = true;
+              toast.hidden = false;
+              live.textContent = '到达 2048，可以继续';
+              return;
+            }
+          }
+        }
+      }
+
+      function end() {
+        over = true;
+        finalEl.textContent = String(score);
+        metaEl.textContent = '最好 ' + best;
+        overlay.hidden = false;
+        live.textContent = '这局结束，分数 ' + score;
+        againBtn.focus();
+      }
+
       function move(dir) {
         if (over) return;
-
         var before = flat().join(',');
         var r, c, line;
-
         if (dir === 'left' || dir === 'right') {
           for (r = 0; r < N; r++) {
             line = grid[r].slice();
@@ -472,20 +241,11 @@
             for (r = 0; r < N; r++) grid[r][c] = line[r];
           }
         }
-
         if (flat().join(',') === before) return;
-
         addTile();
         render();
-
+        celebrate();
         if (!canMove()) end();
-      }
-
-      function end() {
-        over = true;
-        finalEl.textContent = String(score);
-        ovBestEl.textContent = '最好 ' + best;
-        overlay.hidden = false;
       }
 
       function reset() {
@@ -497,79 +257,53 @@
         }
         prev = [];
         for (var k = 0; k < N * N; k++) prev.push(0);
-
         score = 0;
         over = false;
+        reached = false;
+        toast.hidden = true;
         overlay.hidden = true;
-
         addTile();
         addTile();
         render();
       }
 
-      /* ── 键盘 ── */
       var keys = {
         arrowleft: 'left', arrowright: 'right', arrowup: 'up', arrowdown: 'down',
-        a: 'left', d: 'right', w: 'up', s: 'down', h: 'left', l: 'right', k: 'up', j: 'down'
+        a: 'left', d: 'right', w: 'up', s: 'down',
+        h: 'left', l: 'right', k: 'up', j: 'down'
       };
 
       document.addEventListener('keydown', function (e) {
         var dir = keys[String(e.key).toLowerCase()];
         if (!dir) return;
+        if (e.target && e.target.closest && e.target.closest('button')) return;
         e.preventDefault();
         if (!overlay.hidden) return;
         move(dir);
-      }, { passive: false });
+      });
 
-      /* ── 触屏滑动 ── */
       var startX = 0, startY = 0, tracking = false;
-
-      boardEl.addEventListener('touchstart', function (e) {
-        if (e.touches.length !== 1) return;
+      boardEl.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         tracking = true;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-      }, { passive: true });
-
-      boardEl.addEventListener('touchmove', function (e) {
-        if (tracking && e.cancelable) e.preventDefault();
-      }, { passive: false });
-
-      boardEl.addEventListener('touchend', function (e) {
+        startX = e.clientX;
+        startY = e.clientY;
+        boardEl.setPointerCapture(e.pointerId);
+      });
+      boardEl.addEventListener('pointerup', function (e) {
         if (!tracking) return;
         tracking = false;
-        var t = e.changedTouches[0];
-        var dx = t.clientX - startX;
-        var dy = t.clientY - startY;
-        var ax = Math.abs(dx), ay = Math.abs(dy);
-        if (Math.max(ax, ay) < 22) return;
-        move(ax > ay ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-      }, { passive: true });
-
-      /* ── 鼠标拖拽(桌面端也能划) ── */
-      var mDown = false, mX = 0, mY = 0;
-
-      boardEl.addEventListener('mousedown', function (e) {
-        mDown = true;
-        mX = e.clientX;
-        mY = e.clientY;
-      });
-
-      window.addEventListener('mouseup', function (e) {
-        if (!mDown) return;
-        mDown = false;
-        var dx = e.clientX - mX;
-        var dy = e.clientY - mY;
-        var ax = Math.abs(dx), ay = Math.abs(dy);
-        if (Math.max(ax, ay) < 26) return;
+        var dx = e.clientX - startX;
+        var dy = e.clientY - startY;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
         if (!overlay.hidden) return;
-        move(ax > ay ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+        move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
       });
+      boardEl.addEventListener('pointercancel', function () { tracking = false; });
 
-      /* ── 按钮 ── */
       document.getElementById('newBtn').addEventListener('click', reset);
-      document.getElementById('againBtn').addEventListener('click', reset);
-
+      againBtn.addEventListener('click', reset);
+      bestEl.textContent = String(best);
       reset();
     })();
   </script>

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>脉冲 · XLattice</title>
+  <meta name="theme-color" content="#e8eaee" />
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+  <link rel="stylesheet" href="../../assets/tokens.css" />
+  <link rel="stylesheet" href="../../assets/base.css" />
+  <link rel="stylesheet" href="../../assets/game.css" />
+  <script src="../../assets/boot.js"></script>
+  <style>
+    .pulse { align-items: center; text-align: center; }
+    .orb-wrap { display: grid; place-items: center; padding: 6px 0 2px; }
+    .orb {
+      width: min(200px, 62vw);
+      aspect-ratio: 1;
+      border: 0;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: #f7fffc;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7), transparent 34%),
+        radial-gradient(circle at 50% 50%, #1aa88a, #0b4f44 72%);
+      box-shadow: 0 18px 40px -20px rgba(15, 110, 92, 0.85), inset 0 0 0 8px rgba(255, 255, 255, 0.08);
+    }
+    [data-theme="dark"] .orb {
+      color: #06241e;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.45), transparent 32%),
+        radial-gradient(circle at 50% 50%, #b8ffe9, #147864 72%);
+    }
+    .orb span { font-size: 0.85rem; font-weight: 650; opacity: 0.8; }
+    .orb strong { font-size: 1.7rem; letter-spacing: -0.04em; }
+    .orb.is-tap { animation: tap 0.14s ease; }
+    @keyframes tap { 50% { transform: scale(0.96); } }
+    .upgrades { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .upgrade {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-align: left;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+    }
+    .upgrade b { display: block; font-size: 0.95rem; }
+    .upgrade small { display: block; color: var(--muted); font-size: 0.78rem; }
+    .upgrade-cost { text-align: right; font-variant-numeric: tabular-nums; }
+    .upgrade-cost b { font-size: 0.95rem; }
+    .upgrade.is-poor { opacity: 0.62; }
+    .upgrade.is-shake { animation: shake 0.24s linear; }
+    @keyframes shake {
+      25% { transform: translateX(-2px); }
+      75% { transform: translateX(2px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="game pulse">
+    <a class="btn btn-ghost standalone-back" href="../../">返回游戏桌</a>
+    <header class="hud" style="width:100%">
+      <div class="stat"><span class="stat-k">能量</span><b id="energy">0</b></div>
+      <div class="stat"><span class="stat-k">累计</span><b id="total">0</b></div>
+      <div class="stat"><span class="stat-k">每秒</span><b id="rate">0</b></div>
+      <button class="btn btn-ghost spacer" id="resetBtn" type="button">重置</button>
+    </header>
+    <div class="orb-wrap">
+      <button class="orb" id="orb" type="button">
+        <span>点按</span>
+        <strong id="perClick">+1</strong>
+      </button>
+    </div>
+    <div class="upgrades" id="upgrades"></div>
+    <p class="hint">空格也可以点按。能量不够时，升级按钮会轻轻晃一下。</p>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+  </div>
+  <script src="../../assets/game-bridge.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var SLUG = 'pulse';
+      var STATE = 'xg:state:pulse';
+      var UPS = {
+        click: { base: 25, growth: 1.58, cap: 20, name: '聚焦', desc: '每次点击 +1' },
+        auto: { base: 60, growth: 1.68, cap: 20, name: '回响', desc: '每秒自动 +1' },
+        mult: { base: 180, growth: 1.9, cap: 9, name: '谐振', desc: '全部收益的倍率 +1' }
+      };
+
+      var energyEl = document.getElementById('energy');
+      var totalEl = document.getElementById('total');
+      var rateEl = document.getElementById('rate');
+      var perClickEl = document.getElementById('perClick');
+      var orb = document.getElementById('orb');
+      var resetBtn = document.getElementById('resetBtn');
+      var live = document.getElementById('live');
+      var box = document.getElementById('upgrades');
+
+      var energy = 0, total = 0, frac = 0;
+      var clickPower = 1, auto = 0, mult = 1;
+      var levels = { click: 0, auto: 0, mult: 0 };
+      var buttons = {};
+      var armed = 0;
+      var last = performance.now();
+      var uiAcc = 0;
+      var lastPub = 0;
+      var dirty = true;
+
+      function fmt(n) {
+        n = Math.floor(Number(n) || 0);
+        if (n < 10000) return String(n);
+        if (n < 1000000) return (Math.round(n / 100) / 10) + 'k';
+        if (n < 1000000000) return (Math.round(n / 100000) / 10) + 'm';
+        return (Math.round(n / 100000000) / 10) + 'b';
+      }
+
+      function price(kind) {
+        return Math.floor(UPS[kind].base * Math.pow(UPS[kind].growth, levels[kind]));
+      }
+
+      function saveNow() {
+        var state = {
+          energy: energy, total: total, frac: frac,
+          clickPower: clickPower, auto: auto, mult: mult, levels: levels
+        };
+        try { localStorage.setItem(STATE, JSON.stringify(state)); } catch (e) {}
+        window.XGame.publish(SLUG, total, total);
+      }
+
+      function paint() {
+        energyEl.textContent = fmt(energy);
+        totalEl.textContent = fmt(total);
+        rateEl.textContent = fmt(auto * mult);
+        perClickEl.textContent = '+' + fmt(clickPower * mult);
+        Object.keys(UPS).forEach(function (kind) {
+          var btn = buttons[kind];
+          var cap = levels[kind] >= UPS[kind].cap;
+          var cost = price(kind);
+          btn.disabled = cap;
+          btn.classList.toggle('is-poor', !cap && energy < cost);
+          btn.querySelector('[data-lv]').textContent = cap ? '已满' : ('Lv.' + levels[kind]);
+          btn.querySelector('[data-cost]').textContent = cap ? '—' : fmt(cost);
+        });
+      }
+
+      function publishSoon(force) {
+        var now = Date.now();
+        if (!force && now - lastPub < 800) return;
+        lastPub = now;
+        window.XGame.publish(SLUG, total, Math.floor(total));
+      }
+
+      function tap() {
+        var gain = clickPower * mult;
+        energy += gain;
+        total += gain;
+        dirty = true;
+        paint();
+        publishSoon(true);
+        orb.classList.remove('is-tap');
+        void orb.offsetWidth;
+        orb.classList.add('is-tap');
+        live.textContent = '能量 ' + fmt(energy);
+      }
+
+      function buy(kind) {
+        if (levels[kind] >= UPS[kind].cap) return;
+        var cost = price(kind);
+        var btn = buttons[kind];
+        if (energy < cost) {
+          btn.classList.remove('is-shake');
+          void btn.offsetWidth;
+          btn.classList.add('is-shake');
+          return;
+        }
+        energy -= cost;
+        levels[kind] += 1;
+        if (kind === 'click') clickPower += 1;
+        if (kind === 'auto') auto += 1;
+        if (kind === 'mult') mult += 1;
+        dirty = true;
+        paint();
+        saveNow();
+      }
+
+      function load() {
+        try {
+          var raw = localStorage.getItem(STATE);
+          if (!raw) return;
+          var s = JSON.parse(raw);
+          if (!s || typeof s.energy !== 'number') return;
+          energy = s.energy;
+          total = s.total || 0;
+          frac = s.frac || 0;
+          clickPower = s.clickPower || 1;
+          auto = s.auto || 0;
+          mult = s.mult || 1;
+          if (s.levels) {
+            levels = {
+              click: s.levels.click || 0,
+              auto: s.levels.auto || 0,
+              mult: s.levels.mult || 0
+            };
+          }
+        } catch (e) {}
+      }
+
+      function hardReset() {
+        energy = 0; total = 0; frac = 0;
+        clickPower = 1; auto = 0; mult = 1;
+        levels = { click: 0, auto: 0, mult: 0 };
+        try { localStorage.removeItem(STATE); } catch (e) {}
+        window.XGame.publish(SLUG, 0, 0);
+        paint();
+      }
+
+      Object.keys(UPS).forEach(function (kind) {
+        var spec = UPS[kind];
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'upgrade';
+        btn.innerHTML =
+          '<span><b>' + spec.name + ' <span data-lv>Lv.0</span></b><small>' + spec.desc + '</small></span>' +
+          '<span class="upgrade-cost"><b data-cost>0</b><small>能量</small></span>';
+        btn.addEventListener('click', function () { buy(kind); });
+        box.appendChild(btn);
+        buttons[kind] = btn;
+      });
+
+      orb.addEventListener('click', tap);
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== ' ' && e.key !== 'Enter') return;
+        if (e.target && e.target.closest && e.target.closest('button, a')) return;
+        e.preventDefault();
+        if (e.repeat && e.key === 'Enter') return;
+        tap();
+      });
+
+      resetBtn.addEventListener('click', function () {
+        if (!armed) {
+          armed = 1;
+          resetBtn.textContent = '确认重置';
+          setTimeout(function () {
+            armed = 0;
+            resetBtn.textContent = '重置';
+          }, 2400);
+          return;
+        }
+        armed = 0;
+        resetBtn.textContent = '重置';
+        hardReset();
+      });
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) saveNow();
+      });
+      window.addEventListener('pagehide', saveNow);
+
+      function frame(now) {
+        var dt = Math.min(0.25, (now - last) / 1000);
+        last = now;
+        if (auto > 0 && mult > 0) {
+          frac += auto * mult * dt;
+          var whole = Math.floor(frac);
+          if (whole > 0) {
+            frac -= whole;
+            energy += whole;
+            total += whole;
+            dirty = true;
+          }
+        }
+        uiAcc += dt;
+        if (dirty && uiAcc >= 0.1) {
+          uiAcc = 0;
+          dirty = false;
+          paint();
+          publishSoon(false);
+        }
+        requestAnimationFrame(frame);
+      }
+
+      load();
+      if (total > 0) window.XGame.publish(SLUG, total, Math.floor(total));
+      paint();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

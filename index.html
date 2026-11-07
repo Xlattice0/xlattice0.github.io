@@ -1,86 +1,174 @@
 <!doctype html>
-<!--
-  ============================================================
-   XLattice's Game — 首页
-   只有游戏。加新游戏去 assets/games.js
-  ============================================================
--->
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
-  <title>XLattice's Game</title>
-  <meta name="description" content="XLattice 的小游戏。" />
-
+  <title>XLattice · 游戏桌</title>
+  <meta name="description" content="XLattice 的个人小游戏站。打开就能玩，成绩只留在这台浏览器里。" />
+  <meta name="theme-color" content="#f4f5f7" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="XLattice's Game" />
+  <meta property="og:title" content="XLattice · 游戏桌" />
+  <meta property="og:description" content="几款可以马上打开的小游戏。" />
   <meta property="og:url" content="https://www.xlattice.top/" />
-  <meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#08080c" media="(prefers-color-scheme: dark)" />
-
   <link rel="canonical" href="https://www.xlattice.top/" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="assets/tokens.css" />
+  <link rel="stylesheet" href="assets/base.css" />
   <link rel="stylesheet" href="assets/style.css" />
-
-  <script>
-    (function () {
-      var saved = null;
-      try { saved = localStorage.getItem('theme'); } catch (e) {}
-      var dark = saved
-        ? saved === 'dark'
-        : window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    })();
-  </script>
+  <script src="assets/boot.js"></script>
 </head>
-
 <body>
   <a class="skip" href="#games">跳到游戏</a>
 
-  <header class="nav">
-    <div class="nav-inner">
-      <a class="brand" href="./">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
-            <path d="M3 3h10M3 8h10M3 13h10M3 3v10M8 3v10M13 3v10" />
-          </svg>
-        </span>
-        <span class="brand-name">XLattice's <b>Game</b></span>
-      </a>
+  <div class="app">
+    <aside class="side">
+      <div class="brand-lockup">
+        <a class="brand" href="./">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <rect x="2" y="2" width="8.5" height="8.5" rx="2"/>
+              <rect x="13.5" y="2" width="8.5" height="8.5" rx="2" opacity=".45"/>
+              <rect x="2" y="13.5" width="8.5" height="8.5" rx="2" opacity=".45"/>
+              <rect x="13.5" y="13.5" width="8.5" height="8.5" rx="2"/>
+            </svg>
+          </span>
+          <span class="brand-name">XLattice</span>
+        </a>
+        <p class="side-tagline">个人小游戏站</p>
+      </div>
 
-      <a class="nav-link" href="https://github.com/Xlattice0" target="_blank" rel="noopener">GitHub</a>
+      <nav class="side-nav" aria-label="页面">
+        <a class="side-link" href="#games">游戏</a>
+        <a class="side-link" href="#about">关于</a>
+      </nav>
 
-      <button class="theme-btn" id="themeBtn" type="button" aria-label="切换深浅色主题">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.2" />
-          <path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5" />
-        </svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 13.2A8.6 8.6 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2z" />
-        </svg>
-      </button>
+      <div class="side-foot">
+        <a href="https://github.com/Xlattice0/xlattice0.github.io" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <p>成绩只存在这台设备上</p>
+      </div>
+    </aside>
+
+    <div class="content">
+      <header class="topbar">
+        <div class="wrap">
+          <a class="brand topbar-brand" href="./">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <rect x="2" y="2" width="8.5" height="8.5" rx="2"/>
+                <rect x="13.5" y="2" width="8.5" height="8.5" rx="2" opacity=".45"/>
+                <rect x="2" y="13.5" width="8.5" height="8.5" rx="2" opacity=".45"/>
+                <rect x="13.5" y="13.5" width="8.5" height="8.5" rx="2"/>
+              </svg>
+            </span>
+            <span class="brand-name">XLattice</span>
+          </a>
+          <div class="topbar-title">游戏桌</div>
+          <nav class="topnav" aria-label="页面">
+            <a class="text-link" href="#games">游戏</a>
+            <a class="text-link" href="#about">关于</a>
+          </nav>
+          <span class="top-spacer"></span>
+          <a class="text-link" href="https://github.com/Xlattice0/xlattice0.github.io" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <button class="icon-btn theme-btn" type="button" data-theme-toggle aria-label="切换深色">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M18.4 5.6l-1.3 1.3M6.9 17.1l-1.3 1.3"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.5 14.2A8.2 8.2 0 1 1 9.8 3.5a6.6 6.6 0 0 0 10.7 10.7z"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="wrap page">
+        <main id="main">
+          <section class="hero">
+            <div class="hero-copy">
+              <p class="kicker">XLattice</p>
+              <h1>一张放着<span class="h1-break"></span>小游戏的桌子</h1>
+              <p class="lede">打开就能玩。不需要注册，也不需要下载。最高分只留在这台浏览器里。</p>
+              <div class="hero-actions">
+                <a class="btn btn-accent" href="#games">开始浏览</a>
+                <a class="btn btn-ghost" href="#about">关于这个站</a>
+              </div>
+              <ul class="hero-meta">
+                <li id="heroCount">本地可玩</li>
+                <li>纯静态页面</li>
+                <li>成绩存在本地</li>
+              </ul>
+            </div>
+
+            <a class="hero-panel" href="play.html?g=lattice">
+              <span class="hero-panel-top">
+                <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span>晶格</span>
+              </span>
+              <span class="mini-board" aria-hidden="true">
+                <i></i><i class="v2">2</i><i></i><i class="v4">4</i>
+                <i class="v2">2</i><i class="v4">4</i><i class="v8">8</i><i></i>
+                <i></i><i></i><i class="v2">2</i><i class="v16">16</i>
+                <i class="v4">4</i><i></i><i></i><i class="v8">8</i>
+              </span>
+              <span class="hero-caption">试一局晶格</span>
+            </a>
+          </section>
+
+          <section class="block" id="games" aria-labelledby="games-title">
+            <div class="section-head">
+              <h2 id="games-title">桌上的游戏</h2>
+              <p class="section-count" id="shownCount" aria-live="polite">—</p>
+            </div>
+
+            <div class="toolbar">
+              <label class="search-wrap">
+                <span class="sr-only">搜索游戏</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6.5"/>
+                  <path d="M16 16.5 20 20.5" stroke-linecap="round"/>
+                </svg>
+                <input id="q" type="search" placeholder="搜索游戏" autocomplete="off" enterkeyhint="search" />
+              </label>
+              <div class="chips" id="chips" role="group" aria-label="按类型筛选"></div>
+            </div>
+
+            <div class="grid" id="gameGrid"></div>
+            <p class="empty" id="empty" hidden>没有符合的游戏。清空搜索，或切回「全部」。</p>
+            <noscript>
+              <p class="empty">需要启用 JavaScript 才能列出游戏。每一款也都放在 games/ 目录里，可以直接打开。</p>
+            </noscript>
+          </section>
+
+          <section class="block" id="about" aria-labelledby="about-title">
+            <div class="section-head">
+              <h2 id="about-title">关于这个游戏桌</h2>
+            </div>
+            <div class="about-grid">
+              <article class="about-card">
+                <h3>只在浏览器里</h3>
+                <p>页面是静态的。游戏用 HTML 写在这个仓库里，没有服务器，也没有账号。</p>
+              </article>
+              <article class="about-card">
+                <h3>成绩留在本地</h3>
+                <p>最高分写在这台设备的 localStorage 里。换浏览器，或者清掉站点数据，记录就会消失。</p>
+              </article>
+              <article class="about-card">
+                <h3>想再加一款</h3>
+                <p>在 <a href="https://github.com/Xlattice0/xlattice0.github.io" target="_blank" rel="noopener noreferrer">GitHub 仓库</a> 的 games/ 里放一个文件夹，再往 assets/games.js 追加一条。</p>
+              </article>
+            </div>
+          </section>
+        </main>
+
+        <footer class="footer">
+          <p>© <span id="year">2026</span> XLattice</p>
+          <a href="https://github.com/Xlattice0/xlattice0.github.io" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </footer>
+      </div>
     </div>
-  </header>
-
-  <main class="page" id="games">
-    <div class="page-head">
-      <h1 class="page-title">全部游戏</h1>
-      <span class="count" id="count">—</span>
-    </div>
-
-    <div class="grid" id="gameGrid"></div>
-
-    <div class="empty" id="empty" hidden>暂无游戏</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <p>© <span id="year">2026</span> XLattice's Game</p>
-    </div>
-  </footer>
+  </div>
 
   <script src="assets/games.js"></script>
-  <script src="assets/app.js" defer></script>
+  <script src="assets/app.js"></script>
 </body>
 </html>

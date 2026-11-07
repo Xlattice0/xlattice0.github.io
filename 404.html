@@ -3,44 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>404 · 这一格是空的</title>
+  <title>404 · XLattice</title>
   <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#f4f5f7" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/assets/tokens.css" />
+  <link rel="stylesheet" href="/assets/base.css" />
   <link rel="stylesheet" href="/assets/style.css" />
-  <style>
-    .notfound {
-      min-height: 100vh;
-      min-height: 100dvh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      text-align: center;
-      background: var(--paper);
-    }
-    .code {
-      margin: 0 0 10px;
-      font-family: var(--mono);
-      font-size: clamp(4.5rem, 20vw, 9rem);
-      font-weight: 700;
-      line-height: 0.9;
-      letter-spacing: -0.05em;
-      color: var(--accent);
-    }
-    .msg {
-      margin: 0 auto 26px;
-      max-width: 22em;
-      color: var(--muted);
-      font-size: 15px;
-    }
-  </style>
+  <script src="/assets/boot.js"></script>
 </head>
 <body>
   <main class="notfound">
-    <div>
-      <p class="code">404</p>
-      <p class="msg">这一格是空的。链接可能过期了,或者地址打错了。</p>
-      <a class="btn btn-primary" href="/">回到游戏厅</a>
-    </div>
+    <p class="notfound-code">404</p>
+    <h1>这一格是空的</h1>
+    <p class="lede">没有这个页面。地址可能写错了。</p>
+    <p><a class="btn btn-accent" href="/">回到游戏桌</a></p>
   </main>
 </body>
 </html>
