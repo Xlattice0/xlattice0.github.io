@@ -6,7 +6,6 @@
   <title>晶格冲刺 · XLattice</title>
   <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
   <link rel="stylesheet" href="../../assets/tokens.css" />
-  <link rel="stylesheet" href="../../assets/base.css" />
   <link rel="stylesheet" href="../../assets/game.css" />
   <script src="../../assets/boot.js"></script>
   <style>
@@ -26,17 +25,21 @@
     .rush-pad { display: flex; gap: 8px; justify-content: center; }
     .rush-pad button { min-width: 72px; min-height: 52px; font-weight: 700; }
     .rush-pad .jump { min-width: 112px; }
+    html.framed .solo { display: none; }
+    html.framed body { align-items: stretch; padding: 8px; }
+    html.framed .game { width: 100%; }
+    html.framed .view { flex: 1; height: auto; min-height: 180px; }
   </style>
 </head>
 <body>
   <div class="game wide">
-    <a class="btn btn-ghost standalone-back" href="../../">返回游戏桌</a>
+    <a class="btn btn-ghost standalone-back" href="../../">Back</a>
     <header class="hud">
       <div class="stat"><span class="stat-k" id="levelName">门廊</span><b id="levelNum">1</b></div>
       <div class="stat"><span class="stat-k">晶籽</span><b id="score">0</b></div>
       <div class="stat"><span class="stat-k">生命</span><b id="lives">3</b></div>
-      <button class="btn btn-ghost" id="pauseBtn" type="button">暂停</button>
-      <button class="btn btn-ghost" id="muteBtn" type="button">声音</button>
+      <button class="btn btn-ghost solo" id="pauseBtn" type="button">暂停</button>
+      <button class="btn btn-ghost solo" id="muteBtn" type="button">声音</button>
     </header>
     <div class="view" id="view">
       <canvas id="board" width="960" height="540" aria-label="晶格冲刺画面"></canvas>
@@ -46,7 +49,6 @@
       <button type="button" id="rightBtn" aria-label="向右">→</button>
       <button class="btn btn-accent jump" id="jumpBtn" type="button">跳跃</button>
     </div>
-    <p class="hint" id="status">方向键或 A/D 移动，空格 / K / J 跳跃。踩在裂片头上可以消灭它。</p>
     <p class="sr-only" id="live" aria-live="polite"></p>
     <div class="overlay" id="overlay" hidden>
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
@@ -70,7 +72,6 @@
       var livesEl = document.getElementById('lives');
       var levelNumEl = document.getElementById('levelNum');
       var levelNameEl = document.getElementById('levelName');
-      var statusEl = document.getElementById('status');
       var overlay = document.getElementById('overlay');
       var againBtn = document.getElementById('againBtn');
       var pauseBtn = document.getElementById('pauseBtn');
@@ -264,7 +265,6 @@
         }
         mode = 'clear';
         clearIn = 0.7;
-        statusEl.textContent = '这一关过了。';
       }
 
       function step(dt) {
@@ -275,7 +275,6 @@
           if (clearIn <= 0) {
             mode = 'play';
             loadLevel(levelIndex + 1);
-            statusEl.textContent = '下一关。';
           }
           return;
         }
@@ -596,10 +595,7 @@
           e.preventDefault();
           queueJump();
         }
-        if (k === 'escape' || k === 'p') {
-          if (mode === 'play') { mode = 'pause'; pauseBtn.textContent = '继续'; }
-          else if (mode === 'pause') { mode = 'play'; pauseBtn.textContent = '暂停'; }
-        }
+        if (k === 'escape' || k === 'p') togglePause();
       });
       document.addEventListener('keyup', function (e) {
         var k = String(e.key).toLowerCase();
@@ -627,22 +623,45 @@
       hold(document.getElementById('rightBtn'), 'right');
       hold(document.getElementById('jumpBtn'), 'jump');
 
-      pauseBtn.addEventListener('click', function () {
-        if (mode === 'play') { mode = 'pause'; pauseBtn.textContent = '继续'; }
-        else if (mode === 'pause' || mode === 'ready') { mode = 'play'; pauseBtn.textContent = '暂停'; }
-      });
+      pauseBtn.addEventListener('click', togglePause);
       muteBtn.addEventListener('click', function () {
         window.XSound.toggle();
         syncMute();
+        report();
       });
-      againBtn.addEventListener('click', function () {
+      function restart() {
         overlay.hidden = true;
         score = 0;
         lives = 3;
         mode = 'play';
         pauseBtn.textContent = '暂停';
         loadLevel(0);
+        report();
+      }
+      function togglePause() {
+        if (mode === 'play' || mode === 'ready') { mode = 'pause'; pauseBtn.textContent = '继续'; }
+        else if (mode === 'pause') { mode = 'play'; pauseBtn.textContent = '暂停'; }
+        report();
+      }
+      function report() {
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'xg:state',
+              paused: mode === 'pause',
+              muted: window.XSound.muted
+            }, '*');
+          }
+        } catch (e) {}
+      }
+      window.addEventListener('message', function (e) {
+        var data = e.data;
+        if (!data || data.type !== 'xg:cmd') return;
+        if (data.cmd === 'pause') togglePause();
+        if (data.cmd === 'mute') { window.XSound.toggle(); syncMute(); report(); }
+        if (data.cmd === 'restart') restart();
       });
+      againBtn.addEventListener('click', restart);
 
       function frame(now) {
         var dt = Math.min(0.05, (now - last) / 1000);

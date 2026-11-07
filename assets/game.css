@@ -1,4 +1,31 @@
-/* Shared chrome for games running inside the play shell. */
+/* Shared chrome for the platformer. */
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--sans);
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 650;
+  text-decoration: none;
+}
+.btn-accent { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.btn-ghost { background: transparent; }
 
 html, body { height: 100%; }
 

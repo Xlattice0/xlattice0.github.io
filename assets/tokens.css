@@ -1,48 +1,17 @@
-/* Night cabinet. Dark is the design; light is the same materials in daylight. */
-
-:root,
-[data-theme="dark"] {
+:root {
   color-scheme: dark;
-  --bg: #090b10;
-  --bg-tint: #2a170c;
-  --stage: #07090e;
-  --surface: #131821;
-  --surface-2: #1c2330;
-  --ink: #f6f1e8;
-  --muted: #b7aea3;
-  --line: rgba(246, 241, 232, 0.12);
-  --line-strong: rgba(246, 241, 232, 0.24);
-  --accent: #e7a15a;
-  --accent-hover: #ffc892;
-  --on-accent: #2a1606;
-  --accent-soft: rgba(231, 161, 90, 0.16);
-  --ice: #9ad7ff;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 40px -28px rgba(0, 0, 0, 0.8);
-  --shadow-lg: 0 30px 70px -32px rgba(0, 0, 0, 0.85), 0 0 40px -18px rgba(231, 161, 90, 0.35);
-  --radius: 22px;
-  --sidebar: 252px;
-  --max: 1120px;
-  --serif: "Noto Serif SC", Fraunces, "Songti SC", "Noto Serif CJK SC", serif;
-  --sans: Outfit, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
-  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-}
-
-[data-theme="light"] {
-  color-scheme: light;
-  --bg: #f3eee6;
-  --bg-tint: #f6d7b4;
-  --stage: #e7e0d4;
-  --surface: #fffaf3;
-  --surface-2: #f4ecdf;
-  --ink: #1b140f;
-  --muted: #6e6256;
-  --line: rgba(27, 20, 15, 0.12);
-  --line-strong: rgba(27, 20, 15, 0.22);
-  --accent: #b86a24;
-  --accent-hover: #8d4e12;
-  --on-accent: #fff8f0;
-  --accent-soft: rgba(184, 106, 36, 0.14);
-  --ice: #1d6f93;
-  --shadow: 0 1px 2px rgba(70, 42, 16, 0.05), 0 16px 36px -24px rgba(70, 42, 16, 0.35);
-  --shadow-lg: 0 28px 60px -30px rgba(70, 42, 16, 0.4);
+  --bg: #07080c;
+  --bg-tint: #2a160f;
+  --stage: #07080c;
+  --surface: #14161c;
+  --ink: #f5f5f5;
+  --muted: #a3a3a3;
+  --line: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.22);
+  --accent: #9f1d2c;
+  --on-accent: #fff;
+  --shadow: 0 12px 30px -20px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 24px 50px -28px rgba(0, 0, 0, 0.85);
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+  --sans: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }

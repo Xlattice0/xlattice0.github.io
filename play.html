@@ -3,113 +3,57 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>打开游戏 · XLattice</title>
-  <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#f4f5f7" />
+  <title>晶格冲刺 · Xlattice</title>
+  <meta name="theme-color" content="#07080c" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="assets/tokens.css" />
-  <link rel="stylesheet" href="assets/base.css" />
-  <link rel="stylesheet" href="assets/style.css" />
-  <script src="assets/boot.js"></script>
+  <link rel="stylesheet" href="assets/gate.css" />
 </head>
-<body>
-  <a class="skip" href="#stage">跳到游戏画面</a>
-  <div class="shell">
-    <header class="bar">
-      <a class="btn btn-ghost" href="./">返回</a>
-      <div class="bar-title">
-        <b id="gTitle">载入中</b>
-        <span class="bar-tag" id="gTag"></span>
-      </div>
-      <span class="bar-best" id="gBest">—</span>
-      <button class="icon-btn" id="fsBtn" type="button" aria-pressed="false" aria-label="全屏">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
-        </svg>
-      </button>
-      <button class="icon-btn theme-btn" type="button" data-theme-toggle aria-label="切换深色">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M18.4 5.6l-1.3 1.3M6.9 17.1l-1.3 1.3"/>
-        </svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20.5 14.2A8.2 8.2 0 1 1 9.8 3.5a6.6 6.6 0 0 0 10.7 10.7z"/>
-        </svg>
-      </button>
-    </header>
-
-    <div class="stage" id="stage">
-      <iframe id="frame" title="游戏画面" allow="fullscreen" allowfullscreen></iframe>
-    </div>
+<body class="play">
+  <a class="skip" href="#stage">Play</a>
+  <header class="bar">
+    <a class="bar-back" href="./">Back</a>
+    <h1>晶格冲刺</h1>
+    <button type="button" id="pauseBtn" aria-pressed="false">Pause</button>
+    <button type="button" id="muteBtn" aria-pressed="false">Mute</button>
+    <button type="button" id="restartBtn">Restart</button>
+    <button type="button" id="fsBtn" aria-pressed="false">Full</button>
+  </header>
+  <div class="stage" id="stage">
+    <iframe id="frame" title="晶格冲刺" src="games/rush/" allow="fullscreen" allowfullscreen></iframe>
   </div>
-
-  <script src="assets/games.js"></script>
   <script>
     (function () {
-      'use strict';
-
-      var slug = '';
-      try { slug = new URLSearchParams(location.search).get('g') || ''; } catch (e) { slug = ''; }
-
-      var games = Array.isArray(window.GAMES) ? window.GAMES : [];
-      var game = null;
-      for (var i = 0; i < games.length; i++) {
-        if (games[i].slug === slug) { game = games[i]; break; }
-      }
-
-      var titleEl = document.getElementById('gTitle');
-      var tagEl = document.getElementById('gTag');
-      var bestEl = document.getElementById('gBest');
       var frame = document.getElementById('frame');
       var stage = document.getElementById('stage');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var muteBtn = document.getElementById('muteBtn');
       var fsBtn = document.getElementById('fsBtn');
 
-      function readBest() {
+      function send(cmd) {
         try {
-          var n = parseInt(localStorage.getItem('xg:best:' + slug) || '0', 10);
-          return isNaN(n) ? 0 : n;
-        } catch (e) { return 0; }
+          frame.contentWindow.postMessage({ type: 'xg:cmd', cmd: cmd }, '*');
+        } catch (e) {}
       }
 
-      if (!game) {
-        document.title = '找不到这个游戏 · XLattice';
-        titleEl.textContent = '找不到这个游戏';
-        tagEl.textContent = '';
-        bestEl.hidden = true;
-        fsBtn.hidden = true;
-        stage.innerHTML = '<div class="missing"><p>没有这款游戏，链接可能写错了。</p><p><a class="btn btn-accent" href="./">回到游戏桌</a></p></div>';
-        return;
-      }
-
-      document.title = game.title + ' · XLattice';
-      titleEl.textContent = game.title;
-      tagEl.textContent = game.en || '';
-      frame.title = game.title;
-      frame.src = 'games/' + encodeURIComponent(game.slug) + '/';
-      bestEl.textContent = window.formatScore(game, readBest(), '—');
+      pauseBtn.addEventListener('click', function () { send('pause'); });
+      muteBtn.addEventListener('click', function () { send('mute'); });
+      document.getElementById('restartBtn').addEventListener('click', function () { send('restart'); });
 
       window.addEventListener('message', function (e) {
         var data = e.data;
-        if (!data || data.type !== 'xg:score') return;
+        if (!data || data.type !== 'xg:state') return;
         if (frame.contentWindow && e.source !== frame.contentWindow) return;
-        if (data.slug && data.slug !== slug) return;
-        if (typeof data.best !== 'number' || !isFinite(data.best)) return;
-        bestEl.textContent = window.formatScore(game, data.best, '—');
+        pauseBtn.setAttribute('aria-pressed', data.paused ? 'true' : 'false');
+        pauseBtn.textContent = data.paused ? 'Resume' : 'Pause';
+        muteBtn.setAttribute('aria-pressed', data.muted ? 'true' : 'false');
+        muteBtn.textContent = data.muted ? 'Muted' : 'Mute';
       });
 
-      frame.addEventListener('load', function () {
-        try { frame.contentWindow.focus(); } catch (e) {}
-        try {
-          frame.contentWindow.postMessage({ type: 'xg:theme', theme: document.documentElement.dataset.theme || 'light' }, '*');
-        } catch (e) {}
-      });
-
-      function fullscreenElement() {
+      function fsEl() {
         return document.fullscreenElement || document.webkitFullscreenElement || null;
       }
-
       fsBtn.addEventListener('click', function () {
-        if (fullscreenElement()) {
+        if (fsEl()) {
           var exit = document.exitFullscreen || document.webkitExitFullscreen;
           if (exit) exit.call(document);
           return;
@@ -117,11 +61,10 @@
         var req = stage.requestFullscreen || stage.webkitRequestFullscreen;
         if (req) req.call(stage);
       });
-
       document.addEventListener('fullscreenchange', function () {
-        var on = !!fullscreenElement();
+        var on = !!fsEl();
         fsBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        fsBtn.setAttribute('aria-label', on ? '退出全屏' : '全屏');
+        fsBtn.textContent = on ? 'Exit' : 'Full';
       });
     })();
   </script>
