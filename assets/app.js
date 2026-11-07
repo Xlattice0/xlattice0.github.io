@@ -52,7 +52,7 @@
     if (empty) {
       empty.hidden = shown !== 0;
       if (!games.length) empty.textContent = '游戏清单还是空的。请检查 assets/games.js。';
-      else empty.textContent = '没有符合的游戏。清空搜索，或切回「全部」。';
+      else empty.textContent = '这格是空的。换个词，或回到「全部」。';
     }
     if (shownCount) {
       shownCount.textContent = currentTag === '全部' && !q
@@ -63,7 +63,7 @@
 
   function buildCard(game, index) {
     var link = document.createElement('a');
-    link.className = 'card';
+    link.className = 'card' + (game.featured ? ' is-feature' : '');
     link.href = 'play.html?g=' + encodeURIComponent(game.slug);
     link.style.animationDelay = Math.min(index, 8) * 45 + 'ms';
     link.dataset.tags = (game.tags || []).join(',');
@@ -77,6 +77,12 @@
     img.width = 640;
     img.height = 400;
     cover.appendChild(img);
+    if (game.featured) {
+      var badge = document.createElement('span');
+      badge.className = 'cover-badge';
+      badge.textContent = '主打';
+      cover.appendChild(badge);
+    }
     if (game.en) {
       var en = document.createElement('span');
       en.className = 'cover-en';
@@ -112,7 +118,7 @@
     });
     var cta = document.createElement('span');
     cta.className = 'card-cta';
-    cta.textContent = '开始';
+    cta.textContent = game.cta || '开始';
     foot.appendChild(tags);
     foot.appendChild(cta);
 

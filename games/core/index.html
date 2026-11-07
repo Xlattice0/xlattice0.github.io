@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>守核 · XLattice</title>
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+  <link rel="stylesheet" href="../../assets/tokens.css" />
+  <link rel="stylesheet" href="../../assets/base.css" />
+  <link rel="stylesheet" href="../../assets/game.css" />
+  <script src="../../assets/boot.js"></script>
+  <style>
+    .view { position: relative; width: min(100%, 520px); margin: 0 auto; aspect-ratio: 1; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: #07090e; touch-action: none; }
+    .view canvas { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <a class="btn btn-ghost standalone-back" href="../../">返回游戏桌</a>
+    <header class="hud">
+      <div class="stat"><span class="stat-k">分数</span><b id="score">0</b></div>
+      <div class="stat"><span class="stat-k">波次</span><b id="wave">1</b></div>
+      <div class="stat"><span class="stat-k">核心</span><b id="hp">5</b></div>
+      <button class="btn btn-ghost" id="pauseBtn" type="button">暂停</button>
+      <button class="btn btn-ghost" id="muteBtn" type="button">声音</button>
+    </header>
+    <div class="view" id="view"><canvas id="board" width="520" height="520" aria-label="守核画面"></canvas></div>
+    <div class="pad-row">
+      <button class="key" type="button" id="btnLeft" aria-label="逆时针">↺</button>
+      <button class="btn btn-accent" id="btnFire" type="button">射击</button>
+      <button class="key" type="button" id="btnRight" aria-label="顺时针">↻</button>
+    </div>
+    <p class="hint">A/D 或拖动旋转，空格射击。碎片碰到中心会伤到核心。</p>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+    <div class="overlay" id="overlay" hidden>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+        <p class="dialog-kicker" id="ovTitle">核心碎了</p>
+        <p class="dialog-score"><b id="finalScore">0</b><span id="finalMeta"></span></p>
+        <button class="btn btn-accent" id="againBtn" type="button">再来一局</button>
+      </div>
+    </div>
+  </div>
+  <script src="../../assets/audio.js"></script>
+  <script src="../../assets/game-bridge.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      var SLUG = 'core';
+      var view = document.getElementById('view');
+      var canvas = document.getElementById('board');
+      var ctx = canvas.getContext('2d');
+      var scoreEl = document.getElementById('score');
+      var waveEl = document.getElementById('wave');
+      var hpEl = document.getElementById('hp');
+      var statusLive = document.getElementById('live');
+      var overlay = document.getElementById('overlay');
+      var againBtn = document.getElementById('againBtn');
+      var best = window.XGame.readBest(SLUG);
+      var angle = -Math.PI / 2;
+      var spin = 0;
+      var score = 0, wave = 1, hp = 5, over = false, paused = false;
+      var shots = [], foes = [], parts = [];
+      var cooldown = 0, spawn = 0, toSpawn = 6, heat = 0;
+      var last = performance.now();
+      var dragging = false;
+
+      function publish() {
+        scoreEl.textContent = String(score);
+        waveEl.textContent = String(wave);
+        hpEl.textContent = String(hp);
+        if (score > best) {
+          best = score;
+          window.XGame.publish(SLUG, score, best);
+        }
+      }
+      function burst(x, y, color, n) {
+        for (var i = 0; i < n; i++) {
+          var a = Math.random() * Math.PI * 2;
+          var s = 20 + Math.random() * 90;
+          parts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.4, color: color });
+        }
+      }
+      function reset() {
+        score = 0; wave = 1; hp = 5; over = false; paused = false;
+        shots = []; foes = []; parts = [];
+        cooldown = 0; spawn = 0.4; toSpawn = 6; heat = 0; angle = -Math.PI / 2;
+        overlay.hidden = true;
+        publish();
+      }
+      function fire() {
+        if (over || paused || cooldown > 0) return;
+        var R = 118;
+        var x = Math.cos(angle) * R;
+        var y = Math.sin(angle) * R;
+        shots.push({ x: x, y: y, vx: Math.cos(angle) * 280, vy: Math.sin(angle) * 280, life: 1.1 });
+        cooldown = 0.18;
+        window.XSound.shoot();
+      }
+      function update(dt) {
+        if (over || paused) return;
+        angle += spin * dt;
+        cooldown = Math.max(0, cooldown - dt);
+        spawn -= dt;
+        if (spawn <= 0 && toSpawn > 0) {
+          var a = Math.random() * Math.PI * 2;
+          var dist = 250;
+          foes.push({
+            x: Math.cos(a) * dist,
+            y: Math.sin(a) * dist,
+            speed: 28 + wave * 6 + Math.random() * 10
+          });
+          toSpawn -= 1;
+          spawn = Math.max(0.25, 0.85 - wave * 0.05);
+        }
+        if (toSpawn <= 0 && !foes.length) {
+          wave += 1;
+          toSpawn = 5 + wave * 2;
+          spawn = 1.1;
+          heat = 0.4;
+          window.XSound.win();
+        }
+        shots.forEach(function (s) {
+          s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+        });
+        shots = shots.filter(function (s) { return s.life > 0 && Math.hypot(s.x, s.y) < 280; });
+        for (var i = foes.length - 1; i >= 0; i--) {
+          var f = foes[i];
+          var d = Math.hypot(f.x, f.y) || 1;
+          f.x -= (f.x / d) * f.speed * dt;
+          f.y -= (f.y / d) * f.speed * dt;
+          var hit = false;
+          for (var j = shots.length - 1; j >= 0; j--) {
+            if (Math.hypot(shots[j].x - f.x, shots[j].y - f.y) < 16) {
+              shots.splice(j, 1);
+              hit = true;
+              break;
+            }
+          }
+          if (hit) {
+            score += 10;
+            burst(f.x, f.y, '#e7a15a', 8);
+            window.XSound.hit();
+            foes.splice(i, 1);
+            continue;
+          }
+          if (d < 42) {
+            foes.splice(i, 1);
+            hp -= 1;
+            burst(0, 0, '#d4654a', 14);
+            window.XSound.hurt();
+            statusLive.textContent = '核心受到冲击，还剩 ' + hp;
+            if (hp <= 0) {
+              over = true;
+              document.getElementById('finalScore').textContent = String(score);
+              document.getElementById('finalMeta').textContent = '最好 ' + best + ' · 第 ' + wave + ' 波';
+              overlay.hidden = false;
+              againBtn.focus();
+            }
+          }
+        }
+        for (var p = parts.length - 1; p >= 0; p--) {
+          parts[p].life -= dt;
+          parts[p].x += parts[p].vx * dt;
+          parts[p].y += parts[p].vy * dt;
+          if (parts[p].life <= 0) parts.splice(p, 1);
+        }
+        heat = Math.max(0, heat - dt);
+        publish();
+      }
+      function draw() {
+        var size = view.clientWidth || 480;
+        var dpr = Math.min(devicePixelRatio || 1, 2);
+        canvas.width = canvas.height = Math.floor(size * dpr);
+        var S = canvas.width;
+        ctx.setTransform(S / 520, 0, 0, S / 520, S / 2, S / 2);
+        ctx.clearRect(-260, -260, 520, 520);
+        ctx.fillStyle = '#10141c';
+        ctx.fillRect(-260, -260, 520, 520);
+        ctx.strokeStyle = 'rgba(154,215,255,0.18)';
+        ctx.beginPath(); ctx.arc(0, 0, 118, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(231,161,90,0.25)';
+        ctx.beginPath(); ctx.arc(0, 0, 190, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = heat > 0 ? '#ffb25a' : '#e7a15a';
+        ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,241,220,0.8)';
+        ctx.beginPath(); ctx.arc(-6, -6, 8, 0, Math.PI * 2); ctx.fill();
+        var px = Math.cos(angle) * 118, py = Math.sin(angle) * 118;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(angle);
+        ctx.fillStyle = '#f6f1e8';
+        ctx.fillRect(0, -7, 18, 14);
+        ctx.fillStyle = '#9ad7ff';
+        ctx.fillRect(14, -3, 8, 6);
+        ctx.restore();
+        ctx.fillStyle = '#fff6e8';
+        shots.forEach(function (s) {
+          ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI * 2); ctx.fill();
+        });
+        foes.forEach(function (f) {
+          ctx.save();
+          ctx.translate(f.x, f.y);
+          ctx.rotate(Math.atan2(f.y, f.x));
+          ctx.fillStyle = '#d4654a';
+          ctx.beginPath();
+          ctx.moveTo(12, 0); ctx.lineTo(-8, 8); ctx.lineTo(-8, -8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        });
+        parts.forEach(function (p) {
+          ctx.globalAlpha = Math.max(0, p.life * 2);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, 3, 3);
+        });
+        ctx.globalAlpha = 1;
+        if (paused) {
+          ctx.fillStyle = 'rgba(0,0,0,0.45)';
+          ctx.fillRect(-260, -260, 520, 520);
+          ctx.fillStyle = '#fff';
+          ctx.font = '700 32px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('已暂停', 0, 8);
+          ctx.textAlign = 'left';
+        }
+      }
+      function loop(now) {
+        var dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+      }
+      function aimFrom(e) {
+        var rect = canvas.getBoundingClientRect();
+        var x = e.clientX - rect.left - rect.width / 2;
+        var y = e.clientY - rect.top - rect.height / 2;
+        if (x * x + y * y < 16) return;
+        angle = Math.atan2(y, x);
+      }
+      canvas.addEventListener('pointerdown', function (e) {
+        dragging = true;
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        aimFrom(e);
+      });
+      canvas.addEventListener('pointermove', function (e) { if (dragging || e.pointerType === 'mouse') aimFrom(e); });
+      canvas.addEventListener('pointerup', function () { dragging = false; });
+      document.addEventListener('keydown', function (e) {
+        var k = e.key.toLowerCase();
+        if (k === 'a' || k === 'arrowleft') { spin = -2.4; e.preventDefault(); }
+        if (k === 'd' || k === 'arrowright') { spin = 2.4; e.preventDefault(); }
+        if ((k === ' ' || k === 'j' || k === 'enter') && !(e.target && e.target.closest && e.target.closest('button'))) {
+          e.preventDefault();
+          if (!e.repeat) fire();
+        }
+        if (k === 'p' || k === 'escape') paused = !paused;
+      });
+      document.addEventListener('keyup', function (e) {
+        var k = e.key.toLowerCase();
+        if ((k === 'a' || k === 'arrowleft') && spin < 0) spin = 0;
+        if ((k === 'd' || k === 'arrowright') && spin > 0) spin = 0;
+      });
+      function bindSpin(btn, dir) {
+        function down(e) { e.preventDefault(); spin = dir; try { btn.setPointerCapture(e.pointerId); } catch (err) {} }
+        function up() { if (spin === dir) spin = 0; }
+        btn.addEventListener('pointerdown', down);
+        btn.addEventListener('pointerup', up);
+        btn.addEventListener('pointercancel', up);
+      }
+      bindSpin(document.getElementById('btnLeft'), -2.4);
+      bindSpin(document.getElementById('btnRight'), 2.4);
+      document.getElementById('btnFire').addEventListener('click', fire);
+      document.getElementById('pauseBtn').addEventListener('click', function () {
+        paused = !paused;
+        this.textContent = paused ? '继续' : '暂停';
+      });
+      document.getElementById('muteBtn').addEventListener('click', function () {
+        window.XSound.toggle();
+        this.textContent = window.XSound.muted ? '静音' : '声音';
+      });
+      againBtn.addEventListener('click', reset);
+      document.getElementById('muteBtn').textContent = window.XSound.muted ? '静音' : '声音';
+      reset();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>

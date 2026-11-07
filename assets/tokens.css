@@ -1,46 +1,48 @@
-/* Shared color and type tokens for the portal and the games. */
+/* Night cabinet. Dark is the design; light is the same materials in daylight. */
 
-:root {
-  color-scheme: light;
-  --bg: #f4f5f7;
-  --bg-tint: #e7f3ef;
-  --stage: #e8eaee;
-  --surface: #ffffff;
-  --surface-2: #f3f5f7;
-  --ink: #17191e;
-  --muted: #5c6370;
-  --line: rgba(23, 25, 30, 0.10);
-  --line-strong: rgba(23, 25, 30, 0.18);
-  --accent: #0f6e5c;
-  --accent-hover: #0c5b4c;
-  --on-accent: #ffffff;
-  --accent-soft: #e5f3ef;
-  --shadow: 0 1px 2px rgba(18, 22, 28, 0.05), 0 14px 36px -22px rgba(18, 22, 28, 0.38);
-  --shadow-lg: 0 22px 50px -28px rgba(18, 22, 28, 0.42);
-  --radius: 18px;
-  --radius-sm: 12px;
-  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
-  --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --sidebar: 248px;
-  --max: 1040px;
-}
-
+:root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #101216;
-  --bg-tint: #15241f;
-  --stage: #0c0e12;
-  --surface: #181b21;
-  --surface-2: #21252e;
-  --ink: #f2f4f7;
-  --muted: #a7adb8;
-  --line: rgba(255, 255, 255, 0.10);
-  --line-strong: rgba(255, 255, 255, 0.18);
-  --accent: #7ddec8;
-  --accent-hover: #9ae8d6;
-  --on-accent: #06241e;
-  --accent-soft: rgba(125, 222, 200, 0.14);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 16px 40px -24px rgba(0, 0, 0, 0.75);
-  --shadow-lg: 0 24px 60px -28px rgba(0, 0, 0, 0.8);
+  --bg: #090b10;
+  --bg-tint: #2a170c;
+  --stage: #07090e;
+  --surface: #131821;
+  --surface-2: #1c2330;
+  --ink: #f6f1e8;
+  --muted: #b7aea3;
+  --line: rgba(246, 241, 232, 0.12);
+  --line-strong: rgba(246, 241, 232, 0.24);
+  --accent: #e7a15a;
+  --accent-hover: #ffc892;
+  --on-accent: #2a1606;
+  --accent-soft: rgba(231, 161, 90, 0.16);
+  --ice: #9ad7ff;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 40px -28px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 30px 70px -32px rgba(0, 0, 0, 0.85), 0 0 40px -18px rgba(231, 161, 90, 0.35);
+  --radius: 22px;
+  --sidebar: 252px;
+  --max: 1120px;
+  --serif: "Noto Serif SC", Fraunces, "Songti SC", "Noto Serif CJK SC", serif;
+  --sans: Outfit, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3eee6;
+  --bg-tint: #f6d7b4;
+  --stage: #e7e0d4;
+  --surface: #fffaf3;
+  --surface-2: #f4ecdf;
+  --ink: #1b140f;
+  --muted: #6e6256;
+  --line: rgba(27, 20, 15, 0.12);
+  --line-strong: rgba(27, 20, 15, 0.22);
+  --accent: #b86a24;
+  --accent-hover: #8d4e12;
+  --on-accent: #fff8f0;
+  --accent-soft: rgba(184, 106, 36, 0.14);
+  --ice: #1d6f93;
+  --shadow: 0 1px 2px rgba(70, 42, 16, 0.05), 0 16px 36px -24px rgba(70, 42, 16, 0.35);
+  --shadow-lg: 0 28px 60px -30px rgba(70, 42, 16, 0.4);
 }

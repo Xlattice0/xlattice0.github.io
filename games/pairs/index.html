@@ -51,7 +51,8 @@
     .mem-back svg { width: 28px; height: 28px; }
     .mem-front { background: var(--surface); transform: rotateY(180deg); }
     .mem-front svg { width: 46%; height: 46%; }
-    .mem-card.is-matched .mem-front { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .mem-card.is-matched .mem-front { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px var(--accent-soft); }
+    .mem-card.is-open .mem-front { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18); }
     .t1 { color: #0f6e5c; } .t2 { color: #9a3412; } .t3 { color: #1d4e89; } .t4 { color: #9a3d5a; }
     .t5 { color: #3f6212; } .t6 { color: #6d28d9; } .t7 { color: #0f6f8a; } .t8 { color: #a16207; }
     [data-theme="dark"] .t1 { color: #7ddec8; }
@@ -84,6 +85,7 @@
       </div>
     </div>
   </div>
+  <script src="../../assets/audio.js"></script>
   <script src="../../assets/game-bridge.js"></script>
   <script>
     (function () {
@@ -196,10 +198,12 @@
           a.matched = b.matched = true;
           paintCard(ai);
           paintCard(bi);
+          if (window.XSound) window.XSound.coin();
           if (cards.every(function (c) { return c.matched; })) win();
           return;
         }
         lock = true;
+        if (window.XSound) window.XSound.tap();
         var my = token;
         flipTimer = setTimeout(function () {
           if (my !== token) return;

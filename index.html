@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>XLattice · 游戏桌</title>
   <meta name="description" content="XLattice 的个人小游戏站。打开就能玩，成绩只留在这台浏览器里。" />
-  <meta name="theme-color" content="#f4f5f7" />
+  <meta name="theme-color" content="#090b10" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="XLattice · 游戏桌" />
-  <meta property="og:description" content="几款可以马上打开的小游戏。" />
+  <meta property="og:description" content="光从格子里跑出来。横版冲刺，加上合并、守核、碎砖和翻牌。" />
   <meta property="og:url" content="https://www.xlattice.top/" />
   <link rel="canonical" href="https://www.xlattice.top/" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="assets/fonts.css" />
   <link rel="stylesheet" href="assets/tokens.css" />
   <link rel="stylesheet" href="assets/base.css" />
   <link rel="stylesheet" href="assets/style.css" />
@@ -85,32 +86,26 @@
         <main id="main">
           <section class="hero">
             <div class="hero-copy">
-              <p class="kicker">XLattice</p>
-              <h1>一张放着<span class="h1-break"></span>小游戏的桌子</h1>
-              <p class="lede">打开就能玩。不需要注册，也不需要下载。最高分只留在这台浏览器里。</p>
+              <p class="kicker">XLATTICE</p>
+              <h1>光从格子里<br>跑出来。</h1>
+              <p class="lede">五款写在浏览器里的游戏。先跑一局横版冲刺，也可以合并、守核、碎砖、翻牌。不登录，成绩只留在这台设备上。</p>
               <div class="hero-actions">
-                <a class="btn btn-accent" href="#games">开始浏览</a>
-                <a class="btn btn-ghost" href="#about">关于这个站</a>
+                <a class="btn btn-accent" href="play.html?g=rush">玩晶格冲刺</a>
+                <a class="btn btn-ghost" href="#games">全部游戏</a>
               </div>
               <ul class="hero-meta">
                 <li id="heroCount">本地可玩</li>
-                <li>纯静态页面</li>
+                <li>三关平台跳跃</li>
                 <li>成绩存在本地</li>
               </ul>
             </div>
 
-            <a class="hero-panel" href="play.html?g=lattice">
-              <span class="hero-panel-top">
-                <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                <span>晶格</span>
+            <a class="poster" href="play.html?g=rush">
+              <img src="assets/covers/rush.svg" alt="" width="800" height="500" />
+              <span class="poster-caption">
+                <span><b>晶格冲刺</b><span>跑、跳、三关</span></span>
+                <span>试一局</span>
               </span>
-              <span class="mini-board" aria-hidden="true">
-                <i></i><i class="v2">2</i><i></i><i class="v4">4</i>
-                <i class="v2">2</i><i class="v4">4</i><i class="v8">8</i><i></i>
-                <i></i><i></i><i class="v2">2</i><i class="v16">16</i>
-                <i class="v4">4</i><i></i><i></i><i class="v8">8</i>
-              </span>
-              <span class="hero-caption">试一局晶格</span>
             </a>
           </section>
 
@@ -133,7 +128,7 @@
             </div>
 
             <div class="grid" id="gameGrid"></div>
-            <p class="empty" id="empty" hidden>没有符合的游戏。清空搜索，或切回「全部」。</p>
+            <p class="empty" id="empty" hidden>这格是空的。换个词，或回到「全部」。</p>
             <noscript>
               <p class="empty">需要启用 JavaScript 才能列出游戏。每一款也都放在 games/ 目录里，可以直接打开。</p>
             </noscript>
