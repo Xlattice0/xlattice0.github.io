@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>晶格冲刺 · XLattice</title>
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg" />
+  <link rel="stylesheet" href="../../assets/tokens.css" />
+  <link rel="stylesheet" href="../../assets/game.css" />
+  <script src="../../assets/boot.js"></script>
+  <style>
+    .game.wide { width: min(1080px, 100%); }
+    .view {
+      position: relative;
+      height: min(58vh, 520px);
+      min-height: 240px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #07090e;
+      touch-action: none;
+      box-shadow: var(--shadow-lg);
+    }
+    .view canvas { width: 100%; height: 100%; display: block; }
+    .rush-pad { display: flex; gap: 8px; justify-content: center; }
+    .rush-pad button { min-width: 72px; min-height: 52px; font-weight: 700; }
+    .rush-pad .jump { min-width: 112px; }
+    html.framed .solo { display: none; }
+    html.framed body { align-items: stretch; padding: 8px; }
+    html.framed .game { width: 100%; }
+    html.framed .view { flex: 1; height: auto; min-height: 180px; }
+  </style>
+</head>
+<body>
+  <div class="game wide">
+    <a class="btn btn-ghost standalone-back" href="../../">Back</a>
+    <header class="hud">
+      <div class="stat"><span class="stat-k" id="levelName">门廊</span><b id="levelNum">1</b></div>
+      <div class="stat"><span class="stat-k">晶籽</span><b id="score">0</b></div>
+      <div class="stat"><span class="stat-k">生命</span><b id="lives">3</b></div>
+      <button class="btn btn-ghost solo" id="pauseBtn" type="button">暂停</button>
+      <button class="btn btn-ghost solo" id="muteBtn" type="button">声音</button>
+    </header>
+    <div class="view" id="view">
+      <canvas id="board" width="960" height="540" aria-label="晶格冲刺画面"></canvas>
+    </div>
+    <div class="rush-pad" aria-label="触控">
+      <button type="button" id="leftBtn" aria-label="向左">←</button>
+      <button type="button" id="rightBtn" aria-label="向右">→</button>
+      <button class="btn btn-accent jump" id="jumpBtn" type="button">跳跃</button>
+    </div>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+    <div class="overlay" id="overlay" hidden>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+        <p class="dialog-kicker" id="ovTitle">冲过了</p>
+        <p class="dialog-score"><b id="finalScore">0</b><span id="finalMeta"></span></p>
+        <button class="btn btn-accent" id="againBtn" type="button">再来一局</button>
+      </div>
+    </div>
+  </div>
+  <script src="../../assets/audio.js"></script>
+  <script src="../../assets/game-bridge.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var SLUG = 'rush';
+      var canvas = document.getElementById('board');
+      var ctx = canvas.getContext('2d');
+      var viewEl = document.getElementById('view');
+      var scoreEl = document.getElementById('score');
+      var livesEl = document.getElementById('lives');
+      var levelNumEl = document.getElementById('levelNum');
+      var levelNameEl = document.getElementById('levelName');
+      var overlay = document.getElementById('overlay');
+      var againBtn = document.getElementById('againBtn');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var muteBtn = document.getElementById('muteBtn');
+      var live = document.getElementById('live');
+
+      var PW = 28, PH = 36, EW = 34, EH = 26;
+      var GRAV = 1700, JUMP = 560, RUN = 240;
+
+      function lvl(name, w, h, spawn, goal, platforms, coins, enemies) {
+        return { name: name, w: w, h: h, spawn: spawn, goal: goal, platforms: platforms, coins: coins, enemies: enemies };
+      }
+      function P(x, y, w, h, range, speed) {
+        return { x: x, y: y, w: w, h: h, origin: x, range: range || 0, speed: speed || 1, phase: 0, vx: 0 };
+      }
+      function E(x, y, range, speed) {
+        return { x: x, y: y, w: EW, h: EH, base: x, range: range, speed: speed, dir: 1, dead: false };
+      }
+
+      /* Gaps stay under ~100px. Rises stay under ~80px so a full jump clears them. */
+      var LEVELS = [
+        lvl('门廊', 2700, 540, { x: 48, y: 424 }, { x: 2520, y: 360, w: 48, h: 100 }, [
+          P(0, 460, 540, 140),
+          P(640, 460, 460, 140),
+          P(980, 380, 170, 22),
+          P(1220, 460, 700, 140),
+          P(1840, 370, 190, 22),
+          P(2100, 460, 600, 140)
+        ], [
+          { x: 575, y: 400 }, { x: 600, y: 360 }, { x: 625, y: 400 },
+          { x: 1040, y: 330 }, { x: 1100, y: 330 },
+          { x: 1900, y: 320 }, { x: 1960, y: 320 },
+          { x: 2300, y: 400 }
+        ], [
+          E(1460, 434, 180, 70),
+          E(2280, 434, 150, 90)
+        ]),
+        lvl('断桥', 3000, 540, { x: 40, y: 424 }, { x: 2820, y: 340, w: 48, h: 120 }, [
+          P(0, 460, 420, 140),
+          P(520, 460, 300, 140),
+          P(900, 400, 150, 22, 80, 1.3),
+          P(1200, 460, 420, 140),
+          P(1700, 360, 160, 22),
+          P(1940, 460, 260, 140),
+          P(2280, 390, 140, 22, 90, 1.5),
+          P(2500, 460, 500, 140)
+        ], [
+          { x: 460, y: 400 }, { x: 480, y: 360 },
+          { x: 980, y: 340 }, { x: 1060, y: 300 },
+          { x: 1800, y: 300 },
+          { x: 2400, y: 330 }
+        ], [
+          E(1360, 434, 140, 80),
+          E(2060, 434, 100, 100)
+        ]),
+        lvl('高台', 1500, 980, { x: 40, y: 784 }, { x: 1180, y: 250, w: 48, h: 110 }, [
+          P(0, 820, 380, 200),
+          P(300, 740, 150, 20),
+          P(500, 670, 150, 20),
+          P(280, 600, 160, 20),
+          P(500, 530, 170, 20),
+          P(260, 460, 160, 20),
+          P(480, 390, 200, 20),
+          P(760, 390, 220, 20),
+          P(1060, 320, 200, 20),
+          P(1100, 820, 400, 200)
+        ], [
+          { x: 340, y: 690 }, { x: 540, y: 620 }, { x: 330, y: 550 },
+          { x: 560, y: 480 }, { x: 320, y: 410 }, { x: 820, y: 340 },
+          { x: 1120, y: 270 }
+        ], [
+          E(820, 364, 90, 60)
+        ])
+      ];
+
+      var levelIndex = 0;
+      var level = null;
+      var player, coins, enemies, parts, floats;
+      var cam = { x: 0, y: 0 };
+      var score = 0;
+      var best = window.XGame.readBest(SLUG);
+      var lives = 3;
+      var mode = 'ready';
+      var invuln = 0;
+      var shake = 0;
+      var clearIn = 0;
+      var face = 1;
+      var runTime = 0;
+      var squash = 1;
+      var trail = [];
+      var input = { left: false, right: false, jump: false, queued: false };
+      var last = performance.now();
+      var acc = 0;
+      var snapCam = false;
+
+      function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+      function overlap(a, b) {
+        return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+      }
+      function syncMute() { muteBtn.textContent = window.XSound.muted ? '静音' : '声音'; }
+      function noteScore() {
+        scoreEl.textContent = String(score);
+        if (score > best) {
+          best = score;
+          window.XGame.publish(SLUG, score, best);
+        }
+      }
+      function burst(x, y, color, n) {
+        for (var i = 0; i < n; i++) {
+          var a = Math.random() * Math.PI * 2;
+          var s = 30 + Math.random() * 160;
+          parts.push({
+            x: x, y: y,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s - 30,
+            life: 0.35 + Math.random() * 0.35,
+            max: 0.7,
+            color: color,
+            s: 2 + Math.random() * 3
+          });
+        }
+      }
+
+      function loadLevel(index) {
+        levelIndex = index;
+        var src = LEVELS[index];
+        level = {
+          name: src.name, w: src.w, h: src.h,
+          spawn: { x: src.spawn.x, y: src.spawn.y },
+          goal: { x: src.goal.x, y: src.goal.y, w: src.goal.w, h: src.goal.h },
+          platforms: src.platforms.map(function (p) {
+            return { x: p.x, y: p.y, w: p.w, h: p.h, origin: p.origin, range: p.range, speed: p.speed, phase: Math.random(), vx: 0 };
+          })
+        };
+        coins = src.coins.map(function (c) { return { x: c.x, y: c.y, got: false }; });
+        enemies = src.enemies.map(function (e) {
+          return { x: e.x, y: e.y, w: e.w, h: e.h, base: e.base, range: e.range, speed: e.speed, dir: e.dir, dead: false };
+        });
+        player = { x: src.spawn.x, y: src.spawn.y, w: PW, h: PH, vx: 0, vy: 0, grounded: false, platform: null, coyote: 0, buffer: 0 };
+        parts = [];
+        floats = [];
+        trail = [];
+        invuln = 0.4;
+        cam.x = 0;
+        cam.y = 0;
+        levelNumEl.textContent = String(index + 1);
+        levelNameEl.textContent = src.name;
+        livesEl.textContent = String(lives);
+        noteScore();
+      }
+
+      function hurt() {
+        if (invuln > 0 || mode !== 'play') return;
+        lives -= 1;
+        livesEl.textContent = String(lives);
+        window.XSound.hurt();
+        shake = 8;
+        live.textContent = lives > 0 ? '被击中，还剩 ' + lives + ' 条命' : '生命用尽';
+        if (lives <= 0) {
+          mode = 'dead';
+          document.getElementById('ovTitle').textContent = '停在半路';
+          document.getElementById('finalScore').textContent = String(score);
+          document.getElementById('finalMeta').textContent = '最好 ' + best;
+          overlay.hidden = false;
+          againBtn.focus();
+          return;
+        }
+        player.x = level.spawn.x;
+        player.y = level.spawn.y;
+        player.vx = 0;
+        player.vy = 0;
+        player.platform = null;
+        invuln = 1.1;
+        snapCam = true;
+      }
+
+      function finishLevel() {
+        score += 100;
+        noteScore();
+        window.XSound.win();
+        burst(player.x + 10, player.y, '#ffe1a8', 24);
+        if (levelIndex >= LEVELS.length - 1) {
+          mode = 'won';
+          document.getElementById('ovTitle').textContent = '三关都过了';
+          document.getElementById('finalScore').textContent = String(score);
+          document.getElementById('finalMeta').textContent = '最好 ' + best;
+          overlay.hidden = false;
+          live.textContent = '三关都过了，分数 ' + score;
+          againBtn.focus();
+          return;
+        }
+        mode = 'clear';
+        clearIn = 0.7;
+      }
+
+      function step(dt) {
+        invuln = Math.max(0, invuln - dt);
+        shake = Math.max(0, shake - dt * 18);
+        if (mode === 'clear') {
+          clearIn -= dt;
+          if (clearIn <= 0) {
+            mode = 'play';
+            loadLevel(levelIndex + 1);
+          }
+          return;
+        }
+        if (mode !== 'play') return;
+
+        var plats = level.platforms;
+        for (var i = 0; i < plats.length; i++) {
+          var p = plats[i];
+          p.vx = 0;
+          if (!p.range) continue;
+          var prev = p.x;
+          p.phase += dt;
+          p.x = p.origin + Math.sin(p.phase * p.speed) * p.range;
+          p.vx = (p.x - prev) / dt;
+          if (player.platform === p) player.x += p.x - prev;
+        }
+
+        if (input.left) player.vx -= 1400 * dt;
+        else if (input.right) player.vx += 1400 * dt;
+        else {
+          var fr = 1800 * dt;
+          if (Math.abs(player.vx) <= fr) player.vx = 0;
+          else player.vx -= Math.sign(player.vx) * fr;
+        }
+        player.vx = clamp(player.vx, -RUN, RUN);
+        if (input.queued) player.buffer = 0.12;
+        input.queued = false;
+        if (player.grounded) player.coyote = 0.1;
+        else player.coyote = Math.max(0, player.coyote - dt);
+        player.buffer = Math.max(0, player.buffer - dt);
+        if (player.buffer > 0 && player.coyote > 0) {
+          player.vy = -JUMP;
+          player.buffer = 0;
+          player.coyote = 0;
+          player.grounded = false;
+          player.platform = null;
+          squash = 0.72;
+          window.XSound.jump();
+          burst(player.x + PW / 2, player.y + PH, '#c8b8a4', 6);
+        }
+        if (!input.jump && player.vy < -200) player.vy = -200;
+        player.vy = Math.min(860, player.vy + GRAV * dt);
+
+        var prevBottom = player.y + PH;
+        var falling = player.vy > 50;
+        player.x += player.vx * dt;
+        for (i = 0; i < plats.length; i++) {
+          p = plats[i];
+          if (!overlap(player, p)) continue;
+          if (player.vx > 0) player.x = p.x - PW;
+          else if (player.vx < 0) player.x = p.x + p.w;
+          player.vx = 0;
+        }
+        player.y += player.vy * dt;
+        player.grounded = false;
+        var landedOn = null;
+        for (i = 0; i < plats.length; i++) {
+          p = plats[i];
+          if (!overlap(player, p)) continue;
+          if (player.vy >= 0 && prevBottom <= p.y + 6) {
+            player.y = p.y - PH;
+            if (!player.grounded && player.vy > 200) {
+              squash = 1.25;
+              burst(player.x + PW / 2, player.y + PH, '#9aa4b5', 5);
+            }
+            player.vy = 0;
+            player.grounded = true;
+            landedOn = p;
+          } else if (player.vy < 0 && player.y < p.y + p.h) {
+            player.y = p.y + p.h;
+            player.vy = 0;
+          }
+        }
+        player.platform = landedOn;
+        if (player.x < 0) { player.x = 0; player.vx = 0; }
+        if (Math.abs(player.vx) > 30) face = player.vx > 0 ? 1 : -1;
+        if (player.grounded && Math.abs(player.vx) > 40) runTime += dt;
+        else runTime = 0;
+        squash += (1 - squash) * Math.min(1, dt * 10);
+
+        for (i = 0; i < enemies.length; i++) {
+          var en = enemies[i];
+          if (en.dead) continue;
+          en.x += en.dir * en.speed * dt;
+          if (en.x > en.base + en.range) { en.x = en.base + en.range; en.dir = -1; }
+          if (en.x < en.base) { en.x = en.base; en.dir = 1; }
+          if (!overlap(player, en)) continue;
+          if (falling && prevBottom <= en.y + 12) {
+            en.dead = true;
+            player.vy = -380;
+            player.grounded = false;
+            score += 25;
+            noteScore();
+            shake = 5;
+            window.XSound.stomp();
+            burst(en.x + EW / 2, en.y + 8, '#e07a62', 12);
+            floats.push({ x: en.x, y: en.y - 10, text: '+25', life: 0.6 });
+          } else {
+            hurt();
+          }
+        }
+
+        for (i = 0; i < coins.length; i++) {
+          var c = coins[i];
+          if (c.got) continue;
+          if (!overlap(player, { x: c.x - 10, y: c.y - 10, w: 20, h: 20 })) continue;
+          c.got = true;
+          score += 10;
+          noteScore();
+          window.XSound.coin();
+          burst(c.x, c.y, '#ffe1a8', 8);
+          floats.push({ x: c.x - 8, y: c.y - 16, text: '+10', life: 0.55 });
+        }
+
+        if (overlap(player, level.goal)) finishLevel();
+        if (player.y > level.h + 40) hurt();
+
+        for (i = parts.length - 1; i >= 0; i--) {
+          var q = parts[i];
+          q.life -= dt;
+          q.vy += 500 * dt;
+          q.x += q.vx * dt;
+          q.y += q.vy * dt;
+          if (q.life <= 0) parts.splice(i, 1);
+        }
+        for (i = floats.length - 1; i >= 0; i--) {
+          floats[i].life -= dt;
+          floats[i].y -= 24 * dt;
+          if (floats[i].life <= 0) floats.splice(i, 1);
+        }
+        trail.push({ x: player.x, y: player.y });
+        if (trail.length > 6) trail.shift();
+      }
+
+      function roundRect(x, y, w, h, r) {
+        r = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      function draw() {
+        var cssW = viewEl.clientWidth || 800;
+        var cssH = viewEl.clientHeight || 360;
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var bw = Math.max(2, Math.floor(cssW * dpr));
+        var bh = Math.max(2, Math.floor(cssH * dpr));
+        if (canvas.width !== bw || canvas.height !== bh) {
+          canvas.width = bw;
+          canvas.height = bh;
+        }
+        var viewH = 330;
+        var viewW = viewH * (cssW / Math.max(1, cssH));
+        var scale = canvas.width / viewW;
+        var targetX = clamp(player.x + PW / 2 - viewW * 0.36, 0, Math.max(0, level.w - viewW));
+        var targetY = clamp(player.y + PH / 2 - viewH * 0.62, 0, Math.max(0, level.h - viewH));
+        if (mode === 'ready' || snapCam) { cam.x = targetX; cam.y = targetY; snapCam = false; }
+        else {
+          cam.x += (targetX - cam.x) * 0.12;
+          cam.y += (targetY - cam.y) * 0.12;
+        }
+        var sx = (Math.random() - 0.5) * shake;
+        var sy = (Math.random() - 0.5) * shake;
+
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
+        ctx.translate(-cam.x + sx, -cam.y + sy);
+
+        var g = ctx.createLinearGradient(0, 0, 0, level.h);
+        g.addColorStop(0, '#1a2740');
+        g.addColorStop(0.55, '#121722');
+        g.addColorStop(1, '#2a170e');
+        ctx.fillStyle = g;
+        ctx.fillRect(cam.x - 20, cam.y - 20, viewW + 40, viewH + 40);
+
+        ctx.strokeStyle = 'rgba(154,215,255,0.13)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        var gx0 = Math.floor((cam.x * 0.35) / 48) * 48;
+        for (var x = gx0; x < cam.x * 0.35 + viewW + 96; x += 48) {
+          ctx.moveTo(x, cam.y);
+          ctx.lineTo(x, cam.y + viewH);
+        }
+        for (var y = 0; y < level.h; y += 48) {
+          ctx.moveTo(cam.x, y);
+          ctx.lineTo(cam.x + viewW, y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,225,190,0.9)';
+        ctx.beginPath();
+        ctx.arc(level.w * 0.78, 70, 36, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (var i = 0; i < level.platforms.length; i++) {
+          var p = level.platforms[i];
+          ctx.fillStyle = p.range ? '#243044' : '#1a2230';
+          roundRect(p.x, p.y, p.w, p.h, 8);
+          ctx.fill();
+          ctx.fillStyle = p.range ? '#9ad7ff' : '#e7a15a';
+          ctx.fillRect(p.x, p.y, p.w, 5);
+        }
+
+        var goal = level.goal;
+        ctx.fillStyle = '#9ad7ff';
+        ctx.fillRect(goal.x, goal.y, 8, goal.h);
+        ctx.fillRect(goal.x + goal.w - 8, goal.y, 8, goal.h);
+        ctx.fillStyle = '#ffe7c4';
+        ctx.fillRect(goal.x, goal.y, goal.w, 8);
+
+        var t = performance.now() / 1000;
+        for (i = 0; i < coins.length; i++) {
+          var c = coins[i];
+          if (c.got) continue;
+          var bob = Math.sin(t * 3 + i) * 4;
+          ctx.save();
+          ctx.translate(c.x, c.y + bob);
+          ctx.rotate(Math.sin(t * 2 + i) * 0.4);
+          ctx.fillStyle = '#ffe1a8';
+          ctx.beginPath();
+          ctx.moveTo(0, -9);
+          ctx.lineTo(7, 0);
+          ctx.lineTo(0, 9);
+          ctx.lineTo(-7, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        for (i = 0; i < enemies.length; i++) {
+          var en = enemies[i];
+          if (en.dead) continue;
+          ctx.fillStyle = '#c4513a';
+          ctx.beginPath();
+          ctx.moveTo(en.x, en.y + en.h);
+          ctx.lineTo(en.x + en.w / 2, en.y);
+          ctx.lineTo(en.x + en.w, en.y + en.h);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#ffe1c4';
+          ctx.beginPath();
+          ctx.arc(en.x + en.w / 2 + en.dir * 4, en.y + 16, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (!(invuln > 0 && Math.floor(invuln * 14) % 2 === 0)) {
+          for (i = 0; i < trail.length; i++) {
+            ctx.globalAlpha = (i / trail.length) * 0.25;
+            ctx.fillStyle = '#f3d2a4';
+            roundRect(trail[i].x, trail[i].y, PW, PH, 8);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+          ctx.save();
+          ctx.translate(player.x + PW / 2, player.y + PH);
+          ctx.scale(face * squash, 1 / Math.max(0.7, squash));
+          ctx.translate(-PW / 2, -PH);
+          ctx.fillStyle = '#f3d2a4';
+          roundRect(0, 0, PW, PH, 8);
+          ctx.fill();
+          ctx.fillStyle = '#1b140f';
+          roundRect(5, 8, PW - 10, 10, 4);
+          ctx.fill();
+          ctx.fillStyle = '#9ad7ff';
+          ctx.fillRect(8, 11, 4, 4);
+          ctx.fillRect(16, 11, 4, 4);
+          var leg = Math.sin(runTime * 14) * 4;
+          ctx.fillStyle = '#e7a15a';
+          ctx.fillRect(4, PH - 8, 6, 8 + (player.grounded ? leg : 0));
+          ctx.fillRect(PW - 10, PH - 8, 6, 8 - (player.grounded ? leg : 0));
+          ctx.restore();
+        }
+
+        ctx.globalAlpha = 1;
+        for (i = 0; i < parts.length; i++) {
+          var q = parts[i];
+          ctx.globalAlpha = Math.max(0, q.life / q.max);
+          ctx.fillStyle = q.color;
+          ctx.fillRect(q.x, q.y, q.s, q.s);
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fff6e8';
+        ctx.font = '700 14px Outfit, sans-serif';
+        for (i = 0; i < floats.length; i++) ctx.fillText(floats[i].text, floats[i].x, floats[i].y);
+
+        if (mode === 'ready' || mode === 'pause') {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.fillStyle = 'rgba(7,9,14,0.45)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#f6f1e8';
+          ctx.font = '700 ' + Math.floor(canvas.width / 28) + 'px "Noto Serif SC", serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(mode === 'pause' ? '已暂停' : '晶格冲刺', canvas.width / 2, canvas.height / 2);
+          ctx.font = '500 ' + Math.floor(canvas.width / 48) + 'px Outfit, sans-serif';
+          ctx.fillStyle = '#e7a15a';
+          ctx.fillText(mode === 'pause' ? '再按一次继续' : '按跳跃开始', canvas.width / 2, canvas.height / 2 + canvas.width / 22);
+          ctx.textAlign = 'left';
+        }
+      }
+
+      function queueJump() {
+        if (mode === 'ready') mode = 'play';
+        if (mode === 'pause') return;
+        input.jump = true;
+        input.queued = true;
+      }
+
+      document.addEventListener('keydown', function (e) {
+        var k = String(e.key).toLowerCase();
+        if (k === 'arrowleft' || k === 'a') { input.left = true; if (mode === 'ready') mode = 'play'; e.preventDefault(); }
+        if (k === 'arrowright' || k === 'd') { input.right = true; if (mode === 'ready') mode = 'play'; e.preventDefault(); }
+        if (k === 'arrowup' || k === 'w' || k === ' ' || k === 'k' || k === 'j') {
+          if (e.repeat) return;
+          if (e.target && e.target.closest && e.target.closest('button') && (k === ' ' || k === 'enter')) return;
+          e.preventDefault();
+          queueJump();
+        }
+        if (k === 'escape' || k === 'p') togglePause();
+      });
+      document.addEventListener('keyup', function (e) {
+        var k = String(e.key).toLowerCase();
+        if (k === 'arrowleft' || k === 'a') input.left = false;
+        if (k === 'arrowright' || k === 'd') input.right = false;
+        if (k === 'arrowup' || k === 'w' || k === ' ' || k === 'k' || k === 'j') input.jump = false;
+      });
+      window.addEventListener('blur', function () { input.left = input.right = input.jump = false; });
+
+      function hold(button, key) {
+        function down(e) {
+          e.preventDefault();
+          try { button.setPointerCapture(e.pointerId); } catch (err) {}
+          if (mode === 'ready') mode = 'play';
+          input[key] = true;
+          if (key === 'jump') input.queued = true;
+        }
+        function up() { input[key] = false; }
+        button.addEventListener('pointerdown', down);
+        button.addEventListener('pointerup', up);
+        button.addEventListener('pointercancel', up);
+        button.addEventListener('lostpointercapture', up);
+      }
+      hold(document.getElementById('leftBtn'), 'left');
+      hold(document.getElementById('rightBtn'), 'right');
+      hold(document.getElementById('jumpBtn'), 'jump');
+
+      pauseBtn.addEventListener('click', togglePause);
+      muteBtn.addEventListener('click', function () {
+        window.XSound.toggle();
+        syncMute();
+        report();
+      });
+      function restart() {
+        overlay.hidden = true;
+        score = 0;
+        lives = 3;
+        mode = 'play';
+        pauseBtn.textContent = '暂停';
+        loadLevel(0);
+        report();
+      }
+      function togglePause() {
+        if (mode === 'play' || mode === 'ready') { mode = 'pause'; pauseBtn.textContent = '继续'; }
+        else if (mode === 'pause') { mode = 'play'; pauseBtn.textContent = '暂停'; }
+        report();
+      }
+      function report() {
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'xg:state',
+              paused: mode === 'pause',
+              muted: window.XSound.muted
+            }, '*');
+          }
+        } catch (e) {}
+      }
+      window.addEventListener('message', function (e) {
+        var data = e.data;
+        if (!data || data.type !== 'xg:cmd') return;
+        if (data.cmd === 'pause') togglePause();
+        if (data.cmd === 'mute') { window.XSound.toggle(); syncMute(); report(); }
+        if (data.cmd === 'restart') restart();
+      });
+      againBtn.addEventListener('click', restart);
+
+      function frame(now) {
+        var dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        acc += dt;
+        var stepDt = 1 / 120;
+        var guard = 0;
+        while (acc >= stepDt && guard < 8) {
+          step(stepDt);
+          acc -= stepDt;
+          guard++;
+        }
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      syncMute();
+      loadLevel(0);
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

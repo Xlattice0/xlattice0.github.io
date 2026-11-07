@@ -1,0 +1,17 @@
+:root {
+  color-scheme: dark;
+  --bg: #07080c;
+  --bg-tint: #2a160f;
+  --stage: #07080c;
+  --surface: #14161c;
+  --ink: #f5f5f5;
+  --muted: #a3a3a3;
+  --line: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.22);
+  --accent: #9f1d2c;
+  --on-accent: #fff;
+  --shadow: 0 12px 30px -20px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 24px 50px -28px rgba(0, 0, 0, 0.85);
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+  --sans: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}

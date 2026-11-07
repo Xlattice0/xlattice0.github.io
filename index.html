@@ -1,86 +1,97 @@
 <!doctype html>
-<!--
-  ============================================================
-   XLattice's Game — 首页
-   只有游戏。加新游戏去 assets/games.js
-  ============================================================
--->
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
-  <title>XLattice's Game</title>
-  <meta name="description" content="XLattice 的小游戏。" />
-
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="XLattice's Game" />
-  <meta property="og:url" content="https://www.xlattice.top/" />
-  <meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#08080c" media="(prefers-color-scheme: dark)" />
-
-  <link rel="canonical" href="https://www.xlattice.top/" />
+  <title>Xlattice</title>
+  <meta name="description" content="Xlattice" />
+  <meta name="theme-color" content="#07080c" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="assets/gate.css" />
+</head>
+<body>
+  <a class="skip" href="#play">Play</a>
+
+  <div class="scene" aria-hidden="true">
+    <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1a2233"/>
+          <stop offset="0.45" stop-color="#12151c"/>
+          <stop offset="1" stop-color="#2a160f"/>
+        </linearGradient>
+        <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a4150"/>
+          <stop offset="1" stop-color="#171b24"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="800" fill="url(#sky)"/>
+      <circle cx="860" cy="140" r="90" fill="#f3e2c8" opacity=".9"/>
+      <circle cx="860" cy="140" r="220" fill="#e7b07a" opacity=".08"/>
+      <g stroke="#ffffff" stroke-opacity=".06">
+        <path d="M0 120h1200M0 200h1200M0 280h1200M80 0v800M200 0v800M320 0v800M440 0v800M560 0v800"/>
+      </g>
+      <g fill="#0c0e14">
+        <path d="M90 470h80v180H90zM150 420h40v230h-40zM210 450h70v200h-70z"/>
+        <path d="M420 390h46v260h-46zM466 340h28v310h-28zM500 410h60v240h-60z"/>
+      </g>
+      <g>
+        <rect x="40" y="560" width="280" height="36" rx="6" fill="url(#stone)"/>
+        <rect x="40" y="560" width="280" height="5" fill="#c4554a"/>
+        <rect x="380" y="500" width="160" height="22" rx="5" fill="url(#stone)"/>
+        <rect x="380" y="500" width="160" height="4" fill="#e7c39a"/>
+        <rect x="600" y="560" width="220" height="36" rx="6" fill="url(#stone)"/>
+        <rect x="600" y="560" width="220" height="5" fill="#c4554a"/>
+      </g>
+      <g fill="#f0d7a8">
+        <path d="M340 470l7 12-7 12-7-12z"/>
+        <path d="M520 430l6 10-6 10-6-10z"/>
+        <path d="M560 450l6 10-6 10-6-10z"/>
+      </g>
+      <g transform="translate(250 500)">
+        <rect x="6" y="8" width="28" height="32" rx="8" fill="#f2d2b0"/>
+        <rect x="10" y="14" width="20" height="8" rx="3" fill="#14120f"/>
+        <rect x="13" y="16" width="4" height="3" fill="#d7ecff"/>
+        <rect x="22" y="16" width="4" height="3" fill="#d7ecff"/>
+      </g>
+    </svg>
+  </div>
+
+  <header class="brand">
+    <h1 class="mark"><span class="x">X</span>lattice</h1>
+    <p class="sub">晶格冲刺</p>
+  </header>
+
+  <a class="ghost" href="https://github.com/Xlattice0/xlattice0.github.io" target="_blank" rel="noopener noreferrer">GitHub</a>
+
+  <aside class="panel">
+    <div class="glass">
+      <h2>Welcome</h2>
+      <div class="seg" role="group" aria-label="Enter">
+        <button type="button" id="tab-guest" aria-pressed="true">Guest</button>
+        <button type="button" id="tab-enter" aria-pressed="false">Enter</button>
+        <button type="button" id="tab-create" aria-pressed="false">Create</button>
+      </div>
+      <a class="cta" id="play" href="play.html">Play as guest</a>
+      <p class="legal">© 2026 XLattice</p>
+    </div>
+  </aside>
 
   <script>
     (function () {
-      var saved = null;
-      try { saved = localStorage.getItem('theme'); } catch (e) {}
-      var dark = saved
-        ? saved === 'dark'
-        : window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      var tabs = [
+        document.getElementById('tab-guest'),
+        document.getElementById('tab-enter'),
+        document.getElementById('tab-create')
+      ];
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          tabs.forEach(function (other) {
+            other.setAttribute('aria-pressed', other === tab ? 'true' : 'false');
+          });
+        });
+      });
     })();
   </script>
-</head>
-
-<body>
-  <a class="skip" href="#games">跳到游戏</a>
-
-  <header class="nav">
-    <div class="nav-inner">
-      <a class="brand" href="./">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
-            <path d="M3 3h10M3 8h10M3 13h10M3 3v10M8 3v10M13 3v10" />
-          </svg>
-        </span>
-        <span class="brand-name">XLattice's <b>Game</b></span>
-      </a>
-
-      <a class="nav-link" href="https://github.com/Xlattice0" target="_blank" rel="noopener">GitHub</a>
-
-      <button class="theme-btn" id="themeBtn" type="button" aria-label="切换深浅色主题">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.2" />
-          <path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5" />
-        </svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 13.2A8.6 8.6 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2z" />
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <main class="page" id="games">
-    <div class="page-head">
-      <h1 class="page-title">全部游戏</h1>
-      <span class="count" id="count">—</span>
-    </div>
-
-    <div class="grid" id="gameGrid"></div>
-
-    <div class="empty" id="empty" hidden>暂无游戏</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <p>© <span id="year">2026</span> XLattice's Game</p>
-    </div>
-  </footer>
-
-  <script src="assets/games.js"></script>
-  <script src="assets/app.js" defer></script>
 </body>
 </html>
